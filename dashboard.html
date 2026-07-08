@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SATVIEW.TV · חדר בקרה</title>
+<style>
+  * { box-sizing: border-box; }
+  html,body { height:100%; }
+  body { margin:0; background:#07090d; color:#e8eaed; font-family:Arial,Helvetica,sans-serif; display:flex; flex-direction:column; }
+  header { background:#111722; padding:8px 16px; display:flex; align-items:center; gap:16px; border-bottom:1px solid #2a2f3a; flex:0 0 auto; }
+  header .brand { flex:1; min-width:0; }
+  header .brand .t1 { font-size:16px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  header .brand .t2 { font-size:12px; color:#8b949e; }
+  header .brand b { color:#58a6ff; letter-spacing:1px; }
+  header .layouts button { background:#1c2230; color:#c9d1d9; border:1px solid #2a2f3a; border-radius:6px; padding:6px 11px; font-size:13px; cursor:pointer; margin-inline-start:4px; }
+  header .layouts button.on { background:#1f6feb; color:#fff; border-color:#1f6feb; }
+  header .count { background:#0d1117; border:1px solid #2a2f3a; padding:4px 10px; border-radius:12px; font-size:13px; white-space:nowrap; }
+  header a { color:#58a6ff; text-decoration:none; font-size:13px; white-space:nowrap; }
+  #grid { flex:1 1 auto; display:grid; gap:6px; padding:6px; overflow:hidden; }
+  .cell { background:#000; border:1px solid #222; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
+  .cell .player { position:relative; flex:1 1 auto; background:#000; min-height:0; }
+  .cell iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .cell .ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#3a4150; font-size:13px; text-align:center; padding:8px; }
+  .cell .slot { position:absolute; top:6px; left:8px; background:#000a; color:#8b949e; font-size:11px; padding:2px 7px; border-radius:5px; z-index:2; }
+  .cell .live { position:absolute; top:6px; right:8px; background:#000a; color:#3fb950; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
+  .cell .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; }
+  .cell .bar input { min-width:0; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; }
+  .cell .bar input.name { flex:0 0 92px; direction:ltr; }
+  .cell .bar input.srt { flex:1 1 auto; direction:ltr; }
+  .cell .bar button { background:#1f6feb; color:#fff; border:0; border-radius:5px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
+  .cell .bar button.ghost { background:#263043; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="t1">מערכת בונדינג לשידור חי מנייד · שילוב WIFI וסלולר</div>
+    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b></div>
+  </div>
+  <div class="layouts" id="layouts"></div>
+  <span class="count" id="count">0 חי</span>
+  <a href="/recordings/" target="_blank">הקלטות ▸</a>
+</header>
+<div id="grid"></div>
+
+<script>
+const HOST = location.hostname;
+const grid = document.getElementById('grid');
+const countEl = document.getElementById('count');
+const LAYOUTS = [ {n:4,c:2}, {n:9,c:3}, {n:16,c:4}, {n:25,c:5} ];
+
+let layoutIdx = parseInt(localStorage.getItem('layoutIdx')||'1');   // default 3x3
+let slots = JSON.parse(localStorage.getItem('slots')||'[]');        // array of camera names per cell
+let live = [];
+
+function save(){ localStorage.setItem('layoutIdx',layoutIdx); localStorage.setItem('slots',JSON.stringify(slots)); }
+function webrtc(name){ return 'http://'+HOST+':8889/'+name; }
+function srtUrl(name){ return 'srt://'+HOST+':8890?streamid=read:'+name; }
+
+function buildLayoutButtons(){
+  const box = document.getElementById('layouts'); box.innerHTML='';
+  LAYOUTS.forEach((L,i)=>{
+    const b=document.createElement('button'); b.textContent=L.c+'×'+L.c;
+    if(i===layoutIdx) b.className='on';
+    b.onclick=()=>{ layoutIdx=i; save(); render(); };
+    box.appendChild(b);
+  });
+}
+
+function render(){
+  const L=LAYOUTS[layoutIdx];
+  grid.style.gridTemplateColumns='repeat('+L.c+',1fr)';
+  grid.style.gridTemplateRows='repeat('+Math.ceil(L.n/L.c)+',1fr)';
+  grid.innerHTML='';
+  for(let i=0;i<L.n;i++){
+    const name=slots[i]||'';
+    const cell=document.createElement('div'); cell.className='cell';
+
+    const player=document.createElement('div'); player.className='player';
+    if(name){
+      const f=document.createElement('iframe'); f.src=webrtc(name); f.allow='autoplay; fullscreen';
+      player.appendChild(f);
+    } else {
+      const ph=document.createElement('div'); ph.className='ph'; ph.textContent='ריק — הקלד שם מצלמה למטה';
+      player.appendChild(ph);
+    }
+    const slot=document.createElement('div'); slot.className='slot'; slot.textContent='#'+(i+1);
+    player.appendChild(slot);
+    if(name){ const lv=document.createElement('div'); lv.className='live'; lv.textContent=(live.includes(name)?'● LIVE':'○ אין'); player.appendChild(lv); }
+
+    const bar=document.createElement('div'); bar.className='bar';
+    const nameInp=document.createElement('input'); nameInp.className='name'; nameInp.placeholder='שם מצלמה'; nameInp.value=name; nameInp.dir='ltr';
+    const loadBtn=document.createElement('button'); loadBtn.textContent='טען';
+    const srtInp=document.createElement('input'); srtInp.className='srt'; srtInp.value=name?srtUrl(name):''; srtInp.placeholder='כתובת SRT';
+    const copyBtn=document.createElement('button'); copyBtn.className='ghost'; copyBtn.textContent='העתק';
+
+    const assign=()=>{ slots[i]=nameInp.value.trim(); save(); render(); };
+    loadBtn.onclick=assign;
+    nameInp.onkeydown=(e)=>{ if(e.key==='Enter') assign(); };
+    copyBtn.onclick=()=>{ srtInp.select(); navigator.clipboard.writeText(srtInp.value).then(()=>{copyBtn.textContent='✓'; setTimeout(()=>copyBtn.textContent='העתק',1200);}).catch(()=>document.execCommand('copy')); };
+
+    bar.appendChild(nameInp); bar.appendChild(loadBtn); bar.appendChild(srtInp); bar.appendChild(copyBtn);
+    cell.appendChild(player); cell.appendChild(bar);
+    grid.appendChild(cell);
+  }
+}
+
+async function poll(){
+  try{
+    const r=await fetch('/api/v3/paths/list'); const d=await r.json();
+    live=(d.items||[]).filter(i=>i.ready).map(i=>i.name);
+    // auto-fill empty slots with newly live cameras
+    let changed=false;
+    live.forEach(n=>{ if(!slots.includes(n)){ const idx=slots.findIndex((s,i)=>!s && i<LAYOUTS[layoutIdx].n); if(idx>=0){ slots[idx]=n; changed=true; } else if(slots.length<LAYOUTS[layoutIdx].n){ slots.push(n); changed=true; } } });
+    countEl.textContent=live.length+' חי';
+    if(changed){ save(); render(); } else { document.querySelectorAll('.cell .live').forEach((el,i)=>{ const nm=slots[i]; if(nm) el.textContent=live.includes(nm)?'● LIVE':'○ אין'; }); }
+  }catch(e){ countEl.textContent='שגיאת חיבור'; }
+}
+
+buildLayoutButtons();
+render();
+poll();
+setInterval(poll,5000);
+</script>
+</body>
+</html>
