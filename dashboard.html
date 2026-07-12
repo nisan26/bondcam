@@ -26,13 +26,9 @@
   .live { position:absolute; top:6px; right:46px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
   .live.on { color:#3fb950; } .live.off { color:#6e7681; }
   /* audio meter beside each screen */
-  .meter { flex:0 0 26px; background:#0b0e14; border-inline-start:1px solid #1c2230; display:flex; flex-direction:column; align-items:center; padding:6px 3px; gap:4px; }
-  .meter .bars { flex:1 1 auto; width:12px; background:#12161f; border-radius:3px; position:relative; overflow:hidden; min-height:0; }
-  .meter .fill { position:absolute; left:0; right:0; bottom:0; height:0%;
-                 background:linear-gradient(to top,#3fb950 0%,#3fb950 55%,#d29922 78%,#f85149 100%); transition:height .06s linear; }
-  .meter .peak { position:absolute; left:0; right:0; height:2px; background:#fff; bottom:0; transition:bottom .12s linear; }
-  .meter .db { font-size:9px; color:#6e7681; direction:ltr; }
-  .meter .mute { background:none; border:0; color:#6e7681; font-size:13px; cursor:pointer; padding:0; }
+  .meter { flex:0 0 52px; background:#05070a; border-inline-start:1px solid #1c2230; display:flex; flex-direction:column; align-items:center; padding:4px 2px; gap:3px; }
+  .meter canvas { flex:1 1 auto; width:48px; min-height:0; display:block; }
+  .meter .mute { background:none; border:0; color:#6e7681; font-size:13px; cursor:pointer; padding:0; flex:0 0 auto; }
   .meter .mute.on { color:#58a6ff; }
   .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; align-items:center; }
   .bar input { min-width:0; flex:1 1 auto; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; direction:ltr; }
@@ -97,7 +93,7 @@ const whepOf=i=>location.protocol+'//'+HOST+':8889/'+camOf(i)+'_prev/whep';
 const guestOf=i=>location.protocol+'//'+HOST+'/guest/?cam='+camOf(i);
 
 /* ---------- WHEP player + audio meter ---------- */
-async function startPlayer(i, video, fill, peak, dbEl){
+async function startPlayer(i, video, mcv){
   const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
   pc.addTransceiver('video',{direction:'recvonly'});
   pc.addTransceiver('audio',{direction:'recvonly'});
@@ -110,7 +106,7 @@ async function startPlayer(i, video, fill, peak, dbEl){
     }
     // the audio track arrives on the SAME stream - always attach the meter for it
     if(e.track.kind === 'audio'){
-      attachMeter(i, st, fill, peak, dbEl);
+      attachMeter(i, st, mcv);
     }
   };
 
@@ -134,15 +130,60 @@ function resumeAllAudio(){ audioCtxs.forEach(ac => { if(ac.state === 'suspended'
 document.addEventListener('click', resumeAllAudio);
 document.addEventListener('keydown', resumeAllAudio);
 
-function attachMeter(i, stream, fill, peak, dbEl){
+/* ---------- broadcast-style LED VU meter ---------- */
+const DB_SCALE = [3,2,1,0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-12,-13,-14,-15,-17,-20,-25,-30];
+const COL = db => db >= 1  ? { on:'#ff2f2f', off:'#3d0d0d' }      // red
+               : db >= -4 ? { on:'#d8f036', off:'#3a3f10' }      // yellow-green
+                          : { on:'#2ee65e', off:'#0e3a1c' };     // green
+
+function drawMeter(cv, dbL, dbR, pkL, pkR){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 48, h = cv.clientHeight || 100;
+  if(cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  g.fillStyle = '#05070a'; g.fillRect(0,0,w,h);
+
+  const n = DB_SCALE.length;
+  const segH = h / n;
+  const barH = Math.max(2, segH - 1.6);
+  const showLbl = segH >= 9;
+  const bw = showLbl ? (w - 20) / 2 - 2 : (w - 6) / 2 - 1;   // bar width
+  const lx = 2, rx = w - bw - 2;
+
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = Math.max(6, Math.min(8, segH - 2)) + 'px Arial';
+
+  for(let r=0; r<n; r++){
+    const db = DB_SCALE[r];
+    const y  = r * segH;
+    const c  = COL(db);
+
+    const litL = dbL >= db, litR = dbR >= db;
+    const isPkL = Math.abs(pkL - db) < 0.001, isPkR = Math.abs(pkR - db) < 0.001;
+
+    g.fillStyle = isPkL ? '#ffffff' : (litL ? c.on : c.off);
+    g.fillRect(lx, y + (segH-barH)/2, bw, barH);
+    g.fillStyle = isPkR ? '#ffffff' : (litR ? c.on : c.off);
+    g.fillRect(rx, y + (segH-barH)/2, bw, barH);
+
+    if(showLbl){
+      g.fillStyle = db >= 1 ? '#ff6b6b' : '#8b949e';
+      g.fillText(db > 0 ? '+'+db : String(db), w/2, y + segH/2);
+    }
+  }
+}
+
+function attachMeter(i, stream, mcv){
   try{
     if(!stream.getAudioTracks().length) return;
     players[i] = players[i] || {};
-    if(players[i].ac) return;                       // already metering
+    if(players[i].ac) return;
 
     const ac = new (window.AudioContext||window.webkitAudioContext)();
     audioCtxs.add(ac);
-    ac.resume().catch(()=>{});                      // browsers start it suspended
+    ac.resume().catch(()=>{});
 
     // Chrome needs the remote audio consumed by a media element for Web Audio to receive it
     const sink = new Audio();
@@ -150,22 +191,39 @@ function attachMeter(i, stream, fill, peak, dbEl){
     players[i].sink = sink;
 
     const srcNode = ac.createMediaStreamSource(stream);
-    const an = ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=0.5;
-    srcNode.connect(an);
-    const buf = new Float32Array(an.fftSize);
-    let peakVal = 0;
+    const splitter = ac.createChannelSplitter(2);
+    srcNode.connect(splitter);
+
+    const mk = () => { const a = ac.createAnalyser(); a.fftSize = 512; a.smoothingTimeConstant = 0; return a; };
+    const anL = mk(), anR = mk();
+    try { splitter.connect(anL, 0); splitter.connect(anR, 1); }
+    catch(e){ srcNode.connect(anL); srcNode.connect(anR); }     // mono fallback
+
+    const bL = new Float32Array(anL.fftSize), bR = new Float32Array(anR.fftSize);
+    let dL=-100, dR=-100, pL=-100, pR=-100, pLt=0, pRt=0;
+
+    const level = (an, buf) => {
+      an.getFloatTimeDomainData(buf);
+      let mx = 0;
+      for(let k=0;k<buf.length;k++){ const v = Math.abs(buf[k]); if(v>mx) mx=v; }
+      return mx > 0.00001 ? 20*Math.log10(mx) : -100;          // peak dBFS
+    };
 
     const tick = () => {
-      an.getFloatTimeDomainData(buf);
-      let sum=0, mx=0;
-      for(let k=0;k<buf.length;k++){ const v=buf[k]; sum+=v*v; if(Math.abs(v)>mx) mx=Math.abs(v); }
-      const rms = Math.sqrt(sum/buf.length);
-      const db  = rms>0 ? 20*Math.log10(rms) : -100;          // dBFS
-      const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));  // -60..0 dBFS
-      fill.style.height = pct + '%';
-      peakVal = Math.max(peakVal*0.94, pct);
-      peak.style.bottom = peakVal + '%';
-      dbEl.textContent = db <= -60 ? '-∞' : db.toFixed(0);
+      const now = performance.now();
+      const nl = level(anL, bL), nr = level(anR, bR);
+      // fast attack, slow release (PPM ballistics)
+      dL = nl > dL ? nl : dL - 0.9;
+      dR = nr > dR ? nr : dR - 0.9;
+      if(dL < -100) dL = -100; if(dR < -100) dR = -100;
+
+      // peak hold ~1.2s, snapped to the nearest scale step
+      const snap = v => { let best=-100; for(const d of DB_SCALE) if(v>=d && d>best) best=d; return best; };
+      const sl = snap(dL), sr = snap(dR);
+      if(sl >= pL || now - pLt > 1200){ pL = sl; pLt = now; }
+      if(sr >= pR || now - pRt > 1200){ pR = sr; pRt = now; }
+
+      drawMeter(mcv, dL, dR, pL, pR);
       players[i].raf = requestAnimationFrame(tick);
     };
     players[i].ac = ac;
@@ -209,17 +267,14 @@ function render(){
     const video=document.createElement('video');
     video.autoplay=true; video.playsInline=true; video.muted=true; video.controls=false;
 
-    // audio meter column
+    // LED audio meter (stereo, dB scale)
     const meter=document.createElement('div'); meter.className='meter';
-    const bars=document.createElement('div'); bars.className='bars';
-    const fill=document.createElement('div'); fill.className='fill';
-    const peak=document.createElement('div'); peak.className='peak';
-    bars.appendChild(fill); bars.appendChild(peak);
-    const dbEl=document.createElement('div'); dbEl.className='db'; dbEl.textContent='-∞';
+    const mcv=document.createElement('canvas');
     const mute=document.createElement('button'); mute.className='mute'; mute.textContent='🔇';
     mute.title='האזן למסך זה';
     mute.onclick=()=>{ video.muted=!video.muted; mute.classList.toggle('on', !video.muted); mute.textContent = video.muted?'🔇':'🔊'; };
-    meter.appendChild(bars); meter.appendChild(dbEl); meter.appendChild(mute);
+    meter.appendChild(mcv); meter.appendChild(mute);
+    drawMeter(mcv, -100, -100, -100, -100);   // idle state
 
     stage.appendChild(video); stage.appendChild(meter);
 
@@ -243,7 +298,7 @@ function render(){
     cell.appendChild(stage); cell.appendChild(bar);
     grid.appendChild(cell);
 
-    if(isLive) startPlayer(i, video, fill, peak, dbEl).catch(()=>{});
+    if(isLive) startPlayer(i, video, mcv).catch(()=>{});
   }
 }
 
