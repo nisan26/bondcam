@@ -2,79 +2,86 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>SATVIEW.TV · שידור חי</title>
 <style>
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; margin:0; }
-  body { background:#07090d; color:#e8eaed; font-family:Arial,Helvetica,sans-serif; display:flex; flex-direction:column; }
-  header { padding:10px 16px; background:#111722; border-bottom:1px solid #2a2f3a; text-align:center; flex:0 0 auto; }
-  header .t1 { font-size:15px; font-weight:bold; }
-  header .t2 { font-size:12px; color:#8b949e; margin-top:2px; }
-  header b { color:#58a6ff; letter-spacing:1px; }
-  #wrap { flex:1 1 auto; position:relative; background:#000; min-height:0; display:flex; align-items:center; justify-content:center; padding:8px; }
-  #frame { position:relative; width:100%; max-height:100%; aspect-ratio:16/9; background:#000; border:1px solid #1c2230; border-radius:8px; overflow:hidden; }
-  #cv { width:100%; height:100%; display:block; background:#000; }
-  #badge { position:absolute; top:8px; right:8px; background:#000b; padding:5px 11px; border-radius:8px; font-size:13px; font-weight:bold; z-index:3; }
-  #badge.live { color:#3fb950; } #badge.off { color:#8b949e; }
-  #res { position:absolute; top:8px; left:8px; background:#000b; padding:5px 10px; border-radius:8px; font-size:12px; z-index:3; direction:ltr; color:#3fb950; }
-  #flip { position:absolute; bottom:8px; left:8px; background:#000b; color:#e8eaed; border:0; border-radius:8px; padding:8px 12px; font-size:13px; z-index:3; cursor:pointer; }
-  footer { padding:12px 16px 20px; background:#0d1117; flex:0 0 auto; }
-  #msg { text-align:center; font-size:13px; color:#8b949e; margin-bottom:10px; min-height:18px; }
-  #msg.err { color:#f85149; } #msg.ok { color:#3fb950; }
-  button.main { width:100%; border:0; border-radius:12px; padding:17px; font-size:19px; font-weight:bold; cursor:pointer; }
+  html,body { height:100%; margin:0; overflow:hidden; background:#000; }
+  body { font-family:Arial,Helvetica,sans-serif; color:#fff; }
+
+  /* fullscreen mirror self-view */
+  #prev { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; background:#000; z-index:0; }
+  #prev.mirror { transform:scaleX(-1); }
+
+  /* 16:9 broadcast-area guide */
+  #guide { position:fixed; left:0; right:0; top:50%; transform:translateY(-50%); aspect-ratio:16/9;
+           border:2px solid #3fb95088; box-shadow:0 0 0 4000px #000a; z-index:1; pointer-events:none; }
+  #guideLbl { position:absolute; top:-24px; right:2px; font-size:11px; color:#3fb950; background:#000a; padding:2px 7px; border-radius:5px; }
+
+  /* overlays */
+  .top { position:fixed; top:0; left:0; right:0; padding:10px 12px; display:flex; align-items:center; gap:8px; z-index:3;
+         background:linear-gradient(#000c,#0000); }
+  .top .name { flex:1; font-size:13px; font-weight:bold; }
+  .top .name b { color:#58a6ff; }
+  .chip { background:#000b; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:bold; white-space:nowrap; }
+  #badge.live { color:#3fb950; } #badge.off { color:#9aa4b2; }
+  #res { color:#3fb950; direction:ltr; }
+
+  .bottom { position:fixed; bottom:0; left:0; right:0; padding:14px 14px 22px; z-index:3;
+            background:linear-gradient(#0000,#000d); }
+  #msg { text-align:center; font-size:12.5px; color:#c9d1d9; margin-bottom:10px; min-height:17px; text-shadow:0 1px 3px #000; }
+  #msg.err { color:#ff7b72; } #msg.ok { color:#3fb950; }
+  .row { display:flex; gap:8px; align-items:center; }
+  button.main { flex:1; border:0; border-radius:14px; padding:17px; font-size:19px; font-weight:bold; cursor:pointer; }
   #go { background:#238636; color:#fff; }
-  #go:disabled { background:#21262d; color:#6e7681; }
+  #go:disabled { background:#333a; color:#8b949e; }
   #stop { background:#da3633; color:#fff; display:none; }
+  #flip { flex:0 0 auto; background:#ffffff26; color:#fff; border:0; border-radius:14px; padding:17px 18px; font-size:20px; cursor:pointer; }
+  canvas { display:none; }
 </style>
 </head>
 <body>
-<header>
-  <div class="t1">שידור חי · <b>SATVIEW.TV</b></div>
-  <div class="t2" id="camName">—</div>
-</header>
+<video id="prev" autoplay muted playsinline></video>
+<div id="guide"><span id="guideLbl">אזור השידור 16:9</span></div>
+<canvas id="cv" width="1920" height="1080"></canvas>
 
-<div id="wrap">
-  <div id="frame">
-    <canvas id="cv" width="1920" height="1080"></canvas>
-    <div id="badge" class="off">○ לא משדר</div>
-    <div id="res"></div>
-    <button id="flip">🔄 החלף מצלמה</button>
-  </div>
+<div class="top">
+  <div class="name">שידור חי · <b>SATVIEW.TV</b> · <span id="camName">—</span></div>
+  <span class="chip" id="res"></span>
+  <span class="chip off" id="badge">○ לא משדר</span>
 </div>
 
-<footer>
-  <div id="msg">לחץ "התחל שידור" ואשר מצלמה+מיקרופון. אפשר להחזיק את הטלפון רגיל — התמונה תצא אופקית.</div>
-  <button class="main" id="go">🔴 התחל שידור</button>
-  <button class="main" id="stop">■ עצור שידור</button>
-</footer>
+<div class="bottom">
+  <div id="msg">לחץ "התחל שידור" ואשר מצלמה+מיקרופון</div>
+  <div class="row">
+    <button class="main" id="go">🔴 התחל שידור</button>
+    <button class="main" id="stop">■ עצור</button>
+    <button id="flip">🔄</button>
+  </div>
+</div>
 
 <script>
 const params = new URLSearchParams(location.search);
 const CAM  = (params.get('cam') || 'cam1').replace(/[^a-zA-Z0-9_-]/g,'');
 const WHIP = 'https://' + location.hostname + ':8889/' + CAM + '/whip';
-const W = 1920, H = 1080;   // always broadcast TV format
+const W=1920, H=1080;                    // broadcast format
+const VIDEO_KBPS = 3500;                 // video bitrate
+const AUDIO_BPS  = 160000;               // audio bitrate (160 kbps)
 
-const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const prev=document.getElementById('prev'), cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 const msg=document.getElementById('msg'), badge=document.getElementById('badge'), resEl=document.getElementById('res');
 const goBtn=document.getElementById('go'), stopBtn=document.getElementById('stop'), flipBtn=document.getElementById('flip');
-document.getElementById('camName').textContent='ערוץ: '+CAM.toUpperCase();
+document.getElementById('camName').textContent = CAM.toUpperCase();
 
-// hidden raw camera video
-const src=document.createElement('video');
-src.autoplay=true; src.muted=true; src.playsInline=true; src.setAttribute('playsinline','');
-
-let camStream=null, outStream=null, pc=null, raf=null, facing='user';  // front camera by default
+let camStream=null, outStream=null, pc=null, raf=null, facing='user';
 const setMsg=(t,c)=>{ msg.textContent=t; msg.className=c||''; };
 
-/* Draw the camera into a fixed 1920x1080 landscape canvas (cover-fit).
-   Works whether the phone is held vertically or horizontally. */
+/* draw camera into fixed 1920x1080 landscape canvas (center-crop) -> always TV format */
 function draw(){
-  const sw=src.videoWidth, sh=src.videoHeight;
-  if(sw && sh){
-    const scale=Math.max(W/sw, H/sh);
-    const dw=sw*scale, dh=sh*scale;
-    ctx.drawImage(src, (W-dw)/2, (H-dh)/2, dw, dh);
+  const sw=prev.videoWidth, sh=prev.videoHeight;
+  if(sw&&sh){
+    const s=Math.max(W/sw, H/sh), dw=sw*s, dh=sh*s;
+    ctx.drawImage(prev, (W-dw)/2, (H-dh)/2, dw, dh);
   }
   raf=requestAnimationFrame(draw);
 }
@@ -82,27 +89,43 @@ function draw(){
 async function openCamera(){
   if(camStream) camStream.getTracks().forEach(t=>t.stop());
   camStream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode: facing, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} },
-    audio:{ echoCancellation:true, noiseSuppression:true }
+    video:{ facingMode:facing, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} },
+    audio:{ echoCancellation:true, noiseSuppression:true, channelCount:1 }
   });
-  src.srcObject = camStream;
-  await src.play().catch(()=>{});
+  prev.srcObject = camStream;
+  prev.classList.toggle('mirror', facing==='user');   // mirror only the preview, not the broadcast
+  await prev.play().catch(()=>{});
   if(!raf) draw();
-  resEl.textContent = W+'×'+H;   // output is always Full HD landscape
+  resEl.textContent = W+'×'+H;
+}
+
+/* force opus bitrate in the SDP */
+function setOpusBitrate(sdp, bps){
+  return sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g,
+    (m,pt,rest)=> 'a=fmtp:'+pt+' '+rest+';maxaveragebitrate='+bps+';stereo=0');
+}
+
+async function applyBitrates(){
+  for(const s of pc.getSenders()){
+    if(!s.track) continue;
+    const p = s.getParameters();
+    if(!p.encodings || !p.encodings.length) p.encodings=[{}];
+    p.encodings[0].maxBitrate = (s.track.kind==='video') ? VIDEO_KBPS*1000 : AUDIO_BPS;
+    try { await s.setParameters(p); } catch(e){}
+  }
 }
 
 flipBtn.onclick = async () => {
   facing = (facing==='user') ? 'environment' : 'user';
-  try {
-    const oldAudio = camStream ? camStream.getAudioTracks()[0] : null;
+  try{
     await openCamera();
-    // if streaming, swap the audio sender too (video comes from canvas, unchanged)
     if(pc && camStream){
-      const aSender = pc.getSenders().find(s=>s.track && s.track.kind==='audio');
-      const newAudio = camStream.getAudioTracks()[0];
-      if(aSender && newAudio) await aSender.replaceTrack(newAudio);
+      const aS = pc.getSenders().find(s=>s.track && s.track.kind==='audio');
+      const a  = camStream.getAudioTracks()[0];
+      if(aS && a) await aS.replaceTrack(a);
+      await applyBitrates();
     }
-  } catch(e){ setMsg('לא ניתן להחליף מצלמה: '+e.message,'err'); }
+  }catch(e){ setMsg('לא ניתן להחליף מצלמה: '+e.message,'err'); }
 };
 
 async function start(){
@@ -113,15 +136,17 @@ async function start(){
 
   setMsg('מתחבר לשרת...');
   try{
-    // broadcast the CANVAS (always 1920x1080 landscape) + mic audio
-    outStream = cv.captureStream(30);
+    outStream = cv.captureStream(30);                       // broadcast the 16:9 canvas
     camStream.getAudioTracks().forEach(t=>outStream.addTrack(t));
 
     pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
     outStream.getTracks().forEach(t=>pc.addTrack(t, outStream));
 
     const offer = await pc.createOffer();
+    offer.sdp = setOpusBitrate(offer.sdp, AUDIO_BPS);
     await pc.setLocalDescription(offer);
+    await applyBitrates();
+
     await new Promise(res=>{
       if(pc.iceGatheringState==='complete') return res();
       const chk=()=>{ if(pc.iceGatheringState==='complete'){ pc.removeEventListener('icegatheringstatechange',chk); res(); } };
@@ -132,11 +157,12 @@ async function start(){
     const r = await fetch(WHIP,{ method:'POST', headers:{'Content-Type':'application/sdp'}, body:pc.localDescription.sdp });
     if(!r.ok) throw new Error('השרת החזיר '+r.status);
     await pc.setRemoteDescription({ type:'answer', sdp: await r.text() });
+    await applyBitrates();
 
-    badge.textContent='● בשידור'; badge.className='live';
-    setMsg('אתה בשידור חי · 1920×1080 ✓','ok');
+    badge.textContent='● בשידור'; badge.className='chip live';
+    setMsg('בשידור חי · 1920×1080 · '+VIDEO_KBPS+'k וידאו / 160k אודיו ✓','ok');
     goBtn.style.display='none'; stopBtn.style.display='block';
-  }catch(e){ setMsg('שגיאת חיבור לשרת: '+e.message,'err'); stopAll(); goBtn.disabled=false; }
+  }catch(e){ setMsg('שגיאת חיבור: '+e.message,'err'); stopAll(); goBtn.disabled=false; }
 }
 
 function stopAll(){
@@ -144,8 +170,8 @@ function stopAll(){
   if(outStream){ outStream.getTracks().forEach(t=>t.stop()); outStream=null; }
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   if(raf){ cancelAnimationFrame(raf); raf=null; }
-  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
-  badge.textContent='○ לא משדר'; badge.className='off';
+  prev.srcObject=null;
+  badge.textContent='○ לא משדר'; badge.className='chip off';
   resEl.textContent='';
   goBtn.style.display='block'; goBtn.disabled=false; stopBtn.style.display='none';
   setMsg('השידור נעצר.');
