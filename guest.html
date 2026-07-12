@@ -140,7 +140,19 @@ async function start(){
     camStream.getAudioTracks().forEach(t=>outStream.addTrack(t));
 
     pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
-    outStream.getTracks().forEach(t=>pc.addTrack(t, outStream));
+
+    // Force H264: MediaMTX can only put H264 into MPEG-TS (SRT out / recording).
+    // With VP8 the SRT stream would carry audio only.
+    const vTrack = outStream.getVideoTracks()[0];
+    const aTrack = outStream.getAudioTracks()[0];
+    const vTr = pc.addTransceiver(vTrack, { direction:'sendonly', streams:[outStream] });
+    if (aTrack) pc.addTransceiver(aTrack, { direction:'sendonly', streams:[outStream] });
+    try {
+      const caps = RTCRtpSender.getCapabilities('video');
+      const h264 = caps.codecs.filter(c => /h264/i.test(c.mimeType));
+      if (h264.length && vTr.setCodecPreferences) vTr.setCodecPreferences(h264);
+      else setMsg('אזהרה: המכשיר לא תומך ב-H264', 'err');
+    } catch(e){}
 
     const offer = await pc.createOffer();
     offer.sdp = setOpusBitrate(offer.sdp, AUDIO_BPS);
