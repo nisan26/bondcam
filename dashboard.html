@@ -103,10 +103,14 @@ async function startPlayer(i, video, fill, peak, dbEl){
   pc.addTransceiver('audio',{direction:'recvonly'});
 
   pc.ontrack = e => {
-    if(video.srcObject !== e.streams[0]){
-      video.srcObject = e.streams[0];
+    const st = e.streams[0];
+    if(video.srcObject !== st){
+      video.srcObject = st;
       video.play().catch(()=>{});
-      if(e.track.kind==='audio') attachMeter(i, e.streams[0], fill, peak, dbEl);
+    }
+    // the audio track arrives on the SAME stream - always attach the meter for it
+    if(e.track.kind === 'audio'){
+      attachMeter(i, st, fill, peak, dbEl);
     }
   };
 
@@ -125,9 +129,26 @@ async function startPlayer(i, video, fill, peak, dbEl){
   players[i].pc = pc; players[i].video = video;
 }
 
+const audioCtxs = new Set();
+function resumeAllAudio(){ audioCtxs.forEach(ac => { if(ac.state === 'suspended') ac.resume().catch(()=>{}); }); }
+document.addEventListener('click', resumeAllAudio);
+document.addEventListener('keydown', resumeAllAudio);
+
 function attachMeter(i, stream, fill, peak, dbEl){
   try{
+    if(!stream.getAudioTracks().length) return;
+    players[i] = players[i] || {};
+    if(players[i].ac) return;                       // already metering
+
     const ac = new (window.AudioContext||window.webkitAudioContext)();
+    audioCtxs.add(ac);
+    ac.resume().catch(()=>{});                      // browsers start it suspended
+
+    // Chrome needs the remote audio consumed by a media element for Web Audio to receive it
+    const sink = new Audio();
+    sink.srcObject = stream; sink.muted = true; sink.play().catch(()=>{});
+    players[i].sink = sink;
+
     const srcNode = ac.createMediaStreamSource(stream);
     const an = ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=0.5;
     srcNode.connect(an);
@@ -147,7 +168,6 @@ function attachMeter(i, stream, fill, peak, dbEl){
       dbEl.textContent = db <= -60 ? '-∞' : db.toFixed(0);
       players[i].raf = requestAnimationFrame(tick);
     };
-    players[i] = players[i] || {};
     players[i].ac = ac;
     tick();
   }catch(e){}
@@ -157,6 +177,7 @@ function stopPlayer(i){
   const p = players[i]; if(!p) return;
   if(p.raf) cancelAnimationFrame(p.raf);
   if(p.ac) { try{p.ac.close();}catch(e){} }
+  if(p.sink) { try{ p.sink.pause(); p.sink.srcObject=null; }catch(e){} }
   if(p.pc) { try{p.pc.close();}catch(e){} }
   if(p.video) p.video.srcObject=null;
   delete players[i];
