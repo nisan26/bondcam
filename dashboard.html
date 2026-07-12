@@ -19,17 +19,26 @@
   header a { color:#58a6ff; text-decoration:none; font-size:13px; white-space:nowrap; }
   #grid { flex:1 1 auto; display:grid; gap:6px; padding:6px; overflow:hidden; }
   .cell { background:#000; border:1px solid #222; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
-  .cell .player { position:relative; flex:1 1 auto; background:#000; min-height:0; }
-  .cell iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
-  .cell .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a4150; font-size:12px; text-align:center; gap:4px; }
-  .cell .slot { position:absolute; top:6px; left:8px; background:#000a; color:#c9d1d9; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
-  .cell .live { position:absolute; top:6px; right:8px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
-  .cell .live.on { color:#3fb950; } .cell .live.off { color:#6e7681; }
-  .cell .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; align-items:center; }
-  .cell .bar input { min-width:0; flex:1 1 auto; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; direction:ltr; }
-  .cell .bar button { border:0; border-radius:5px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
-  .cell .bar .link { background:#238636; color:#fff; font-weight:bold; }
-  .cell .bar .copy { background:#263043; color:#c9d1d9; }
+  .stage { position:relative; flex:1 1 auto; min-height:0; display:flex; }
+  .stage video { flex:1 1 auto; width:100%; height:100%; object-fit:contain; background:#000; min-width:0; }
+  .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a4150; font-size:12px; text-align:center; gap:4px; }
+  .slot { position:absolute; top:6px; left:8px; background:#000a; color:#c9d1d9; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
+  .live { position:absolute; top:6px; right:46px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
+  .live.on { color:#3fb950; } .live.off { color:#6e7681; }
+  /* audio meter beside each screen */
+  .meter { flex:0 0 26px; background:#0b0e14; border-inline-start:1px solid #1c2230; display:flex; flex-direction:column; align-items:center; padding:6px 3px; gap:4px; }
+  .meter .bars { flex:1 1 auto; width:12px; background:#12161f; border-radius:3px; position:relative; overflow:hidden; min-height:0; }
+  .meter .fill { position:absolute; left:0; right:0; bottom:0; height:0%;
+                 background:linear-gradient(to top,#3fb950 0%,#3fb950 55%,#d29922 78%,#f85149 100%); transition:height .06s linear; }
+  .meter .peak { position:absolute; left:0; right:0; height:2px; background:#fff; bottom:0; transition:bottom .12s linear; }
+  .meter .db { font-size:9px; color:#6e7681; direction:ltr; }
+  .meter .mute { background:none; border:0; color:#6e7681; font-size:13px; cursor:pointer; padding:0; }
+  .meter .mute.on { color:#58a6ff; }
+  .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; align-items:center; }
+  .bar input { min-width:0; flex:1 1 auto; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; direction:ltr; }
+  .bar button { border:0; border-radius:5px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
+  .bar .link { background:#238636; color:#fff; font-weight:bold; }
+  .bar .copy { background:#263043; color:#c9d1d9; }
   #modal { position:fixed; inset:0; background:#000c; display:none; align-items:center; justify-content:center; z-index:50; }
   #modal.on { display:flex; }
   .box { background:#131926; border:1px solid #2a2f3a; border-radius:12px; padding:22px; width:min(560px,92vw); }
@@ -39,7 +48,6 @@
   .box input { width:100%; background:#07090d; color:#e8eaed; border:1px solid #2a3550; border-radius:7px; padding:9px 10px; font-size:14px; direction:ltr; }
   .box .linkbox { margin-top:14px; background:#0a1a12; border:1px solid #1f5c37; border-radius:8px; padding:12px; }
   .box .linkbox .lbl { font-size:12px; color:#3fb950; margin-bottom:6px; }
-  .box .linkbox input { font-size:12px; }
   .box .acts { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
   .box .acts button { border:0; border-radius:7px; padding:10px 16px; font-size:14px; cursor:pointer; }
   .box .acts .mail { background:#1f6feb; color:#fff; font-weight:bold; }
@@ -62,7 +70,7 @@
 <div id="modal">
   <div class="box">
     <h2 id="mTitle">לינק שידור</h2>
-    <p class="sub">המרואיין פותח את הלינק, מאשר מצלמה+מיקרופון, ומשדר ב-1920×1080. בלי אפליקציה ובלי סיסמה.</p>
+    <p class="sub">המרואיין פותח את הלינק, מאשר מצלמה+מיקרופון, ומשדר. בלי אפליקציה ובלי סיסמה.</p>
     <label>אימייל של המרואיין (לא חובה)</label>
     <input id="gMail" type="email" placeholder="guest@example.com">
     <div class="linkbox">
@@ -78,20 +86,83 @@
 </div>
 
 <script>
-const HOST = location.hostname;
-const grid = document.getElementById('grid');
-const countEl = document.getElementById('count');
-const LAYOUTS = [ {n:4,c:2}, {n:9,c:3}, {n:16,c:4}, {n:25,c:5} ];
-let layoutIdx = parseInt(localStorage.getItem('layoutIdx')||'1');
-let live = [];
+const HOST=location.hostname, grid=document.getElementById('grid'), countEl=document.getElementById('count');
+const LAYOUTS=[{n:4,c:2},{n:9,c:3},{n:16,c:4},{n:25,c:5}];
+let layoutIdx=parseInt(localStorage.getItem('layoutIdx')||'1');
+let live=[], players={};                       // i -> {pc, video, ac, raf}
 
-/* Screen i (1-based)  ->  camera "camI"  ->  dedicated SRT port 9000+i */
-const camOf  = i => 'cam' + i;
-const portOf = i => 9000 + i;
-const srtOf  = i => 'srt://' + HOST + ':' + portOf(i);
-const webrtcOf = i => location.protocol + '//' + HOST + ':8889/' + camOf(i) + '_prev';
-const guestOf  = i => location.protocol + '//' + HOST + '/guest/?cam=' + camOf(i);
+const camOf=i=>'cam'+i, portOf=i=>9000+i;
+const srtOf=i=>'srt://'+HOST+':'+portOf(i);
+const whepOf=i=>location.protocol+'//'+HOST+':8889/'+camOf(i)+'_prev/whep';
+const guestOf=i=>location.protocol+'//'+HOST+'/guest/?cam='+camOf(i);
 
+/* ---------- WHEP player + audio meter ---------- */
+async function startPlayer(i, video, fill, peak, dbEl){
+  const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
+  pc.addTransceiver('video',{direction:'recvonly'});
+  pc.addTransceiver('audio',{direction:'recvonly'});
+
+  pc.ontrack = e => {
+    if(video.srcObject !== e.streams[0]){
+      video.srcObject = e.streams[0];
+      video.play().catch(()=>{});
+      if(e.track.kind==='audio') attachMeter(i, e.streams[0], fill, peak, dbEl);
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await new Promise(r=>{
+    if(pc.iceGatheringState==='complete') return r();
+    const chk=()=>{ if(pc.iceGatheringState==='complete'){ pc.removeEventListener('icegatheringstatechange',chk); r(); } };
+    pc.addEventListener('icegatheringstatechange',chk); setTimeout(r,2500);
+  });
+  const res = await fetch(whepOf(i), { method:'POST', headers:{'Content-Type':'application/sdp'}, body:pc.localDescription.sdp });
+  if(!res.ok) throw new Error(res.status);
+  await pc.setRemoteDescription({ type:'answer', sdp: await res.text() });
+
+  players[i] = players[i] || {};
+  players[i].pc = pc; players[i].video = video;
+}
+
+function attachMeter(i, stream, fill, peak, dbEl){
+  try{
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const srcNode = ac.createMediaStreamSource(stream);
+    const an = ac.createAnalyser(); an.fftSize=1024; an.smoothingTimeConstant=0.5;
+    srcNode.connect(an);
+    const buf = new Float32Array(an.fftSize);
+    let peakVal = 0;
+
+    const tick = () => {
+      an.getFloatTimeDomainData(buf);
+      let sum=0, mx=0;
+      for(let k=0;k<buf.length;k++){ const v=buf[k]; sum+=v*v; if(Math.abs(v)>mx) mx=Math.abs(v); }
+      const rms = Math.sqrt(sum/buf.length);
+      const db  = rms>0 ? 20*Math.log10(rms) : -100;          // dBFS
+      const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));  // -60..0 dBFS
+      fill.style.height = pct + '%';
+      peakVal = Math.max(peakVal*0.94, pct);
+      peak.style.bottom = peakVal + '%';
+      dbEl.textContent = db <= -60 ? '-∞' : db.toFixed(0);
+      players[i].raf = requestAnimationFrame(tick);
+    };
+    players[i] = players[i] || {};
+    players[i].ac = ac;
+    tick();
+  }catch(e){}
+}
+
+function stopPlayer(i){
+  const p = players[i]; if(!p) return;
+  if(p.raf) cancelAnimationFrame(p.raf);
+  if(p.ac) { try{p.ac.close();}catch(e){} }
+  if(p.pc) { try{p.pc.close();}catch(e){} }
+  if(p.video) p.video.srcObject=null;
+  delete players[i];
+}
+
+/* ---------- grid ---------- */
 function buildLayoutButtons(){
   const box=document.getElementById('layouts'); box.innerHTML='';
   LAYOUTS.forEach((L,i)=>{
@@ -103,45 +174,61 @@ function buildLayoutButtons(){
 }
 
 function render(){
+  Object.keys(players).forEach(k=>stopPlayer(k));
   const L=LAYOUTS[layoutIdx];
   grid.style.gridTemplateColumns='repeat('+L.c+',1fr)';
   grid.style.gridTemplateRows='repeat('+Math.ceil(L.n/L.c)+',1fr)';
   grid.innerHTML='';
+
   for(let i=1;i<=L.n;i++){
     const cam=camOf(i), isLive=live.includes(cam);
     const cell=document.createElement('div'); cell.className='cell';
+    const stage=document.createElement('div'); stage.className='stage';
 
-    const player=document.createElement('div'); player.className='player';
-    if(isLive){
-      const f=document.createElement('iframe'); f.src=webrtcOf(i); f.allow='autoplay; fullscreen';
-      player.appendChild(f);
-    } else {
+    const video=document.createElement('video');
+    video.autoplay=true; video.playsInline=true; video.muted=true; video.controls=false;
+
+    // audio meter column
+    const meter=document.createElement('div'); meter.className='meter';
+    const bars=document.createElement('div'); bars.className='bars';
+    const fill=document.createElement('div'); fill.className='fill';
+    const peak=document.createElement('div'); peak.className='peak';
+    bars.appendChild(fill); bars.appendChild(peak);
+    const dbEl=document.createElement('div'); dbEl.className='db'; dbEl.textContent='-∞';
+    const mute=document.createElement('button'); mute.className='mute'; mute.textContent='🔇';
+    mute.title='האזן למסך זה';
+    mute.onclick=()=>{ video.muted=!video.muted; mute.classList.toggle('on', !video.muted); mute.textContent = video.muted?'🔇':'🔊'; };
+    meter.appendChild(bars); meter.appendChild(dbEl); meter.appendChild(mute);
+
+    stage.appendChild(video); stage.appendChild(meter);
+
+    if(!isLive){
       const ph=document.createElement('div'); ph.className='ph';
       ph.innerHTML='<div>אין שידור</div><div style="font-size:11px">שלח לינק או שדר מהאפליקציה</div>';
-      player.appendChild(ph);
+      stage.appendChild(ph);
     }
     const sl=document.createElement('div'); sl.className='slot'; sl.textContent='#'+i+' · '+cam.toUpperCase();
     const lv=document.createElement('div'); lv.className='live '+(isLive?'on':'off'); lv.textContent=isLive?'● LIVE':'○ אין';
-    player.appendChild(sl); player.appendChild(lv);
+    stage.appendChild(sl); stage.appendChild(lv);
 
     const bar=document.createElement('div'); bar.className='bar';
     const linkBtn=document.createElement('button'); linkBtn.className='link'; linkBtn.textContent='🔗 צור לינק';
     linkBtn.onclick=()=>openModal(i);
-    const srtInp=document.createElement('input'); srtInp.value=srtOf(i); srtInp.title='כתובת SRT ייחודית למסך זה (פורט '+portOf(i)+')';
+    const srtInp=document.createElement('input'); srtInp.value=srtOf(i); srtInp.title='SRT HD ייחודי למסך זה (פורט '+portOf(i)+')';
     const copyBtn=document.createElement('button'); copyBtn.className='copy'; copyBtn.textContent='העתק';
     copyBtn.onclick=()=>{ srtInp.select(); navigator.clipboard.writeText(srtInp.value).then(()=>{copyBtn.textContent='✓'; setTimeout(()=>copyBtn.textContent='העתק',1200);}).catch(()=>document.execCommand('copy')); };
     bar.appendChild(linkBtn); bar.appendChild(srtInp); bar.appendChild(copyBtn);
 
-    cell.appendChild(player); cell.appendChild(bar);
+    cell.appendChild(stage); cell.appendChild(bar);
     grid.appendChild(cell);
+
+    if(isLive) startPlayer(i, video, fill, peak, dbEl).catch(()=>{});
   }
 }
 
-/* ---- per-screen guest link modal ---- */
+/* ---------- guest link modal ---------- */
 const modal=document.getElementById('modal'), gMail=document.getElementById('gMail'), gLink=document.getElementById('gLink');
-let curScreen=1;
 function openModal(i){
-  curScreen=i;
   document.getElementById('mTitle').textContent='לינק שידור · מסך #'+i+' ('+camOf(i).toUpperCase()+')';
   gLink.value=guestOf(i); gMail.value='';
   modal.classList.add('on');
@@ -152,19 +239,16 @@ document.getElementById('btnCopy').onclick=()=>{
   navigator.clipboard.writeText(gLink.value).then(()=>{ const b=document.getElementById('btnCopy'); b.textContent='הועתק ✓'; setTimeout(()=>b.textContent='העתק לינק',1500); });
 };
 document.getElementById('btnMail').onclick=()=>{
-  const subject=encodeURIComponent('לינק לשידור חי · SATVIEW.TV');
-  const body=encodeURIComponent(
-    'שלום,\n\nלחץ/י על הלינק כדי לשדר אלינו בשידור חי:\n\n'+gLink.value+
-    '\n\nהוראות:\n1. פתח/י בטלפון (Chrome / Safari).\n2. החזק/י את הטלפון לרוחב.\n'+
-    '3. אשר/י גישה למצלמה ולמיקרופון.\n4. לחץ/י "התחל שידור".\n\nלא צריך להתקין שום אפליקציה.\n\nSATVIEW.TV'
-  );
-  window.location.href='mailto:'+encodeURIComponent(gMail.value.trim())+'?subject='+subject+'&body='+body;
+  const s=encodeURIComponent('לינק לשידור חי · SATVIEW.TV');
+  const b=encodeURIComponent('שלום,\n\nלחץ/י על הלינק כדי לשדר אלינו בשידור חי:\n\n'+gLink.value+
+    '\n\n1. פתח/י בטלפון (Chrome / Safari).\n2. אשר/י גישה למצלמה ולמיקרופון.\n3. לחץ/י "התחל שידור".\n\nלא צריך להתקין שום אפליקציה.\n\nSATVIEW.TV');
+  window.location.href='mailto:'+encodeURIComponent(gMail.value.trim())+'?subject='+s+'&body='+b;
 };
 
 async function poll(){
   try{
     const r=await fetch('/api/v3/paths/list'); const d=await r.json();
-    const now=(d.items||[]).filter(i=>i.ready).map(i=>i.name);
+    const now=(d.items||[]).filter(i=>i.ready).map(i=>i.name).filter(n=>!n.endsWith('_prev'));
     const changed = now.join(',')!==live.join(',');
     live=now;
     countEl.textContent=live.length+' חי';
