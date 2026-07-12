@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SATVIEW.TV · חדר בקרה</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing:border-box; }
   html,body { height:100%; }
   body { margin:0; background:#07090d; color:#e8eaed; font-family:Arial,Helvetica,sans-serif; display:flex; flex-direction:column; }
   header { background:#111722; padding:8px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #2a2f3a; flex:0 0 auto; }
@@ -13,8 +13,6 @@
   header .brand .t1 { font-size:16px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   header .brand .t2 { font-size:12px; color:#8b949e; }
   header .brand b { color:#58a6ff; letter-spacing:1px; }
-  header button.newlink { background:#238636; color:#fff; border:0; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:bold; cursor:pointer; white-space:nowrap; }
-  header button.newlink:hover { background:#2ea043; }
   header .layouts button { background:#1c2230; color:#c9d1d9; border:1px solid #2a2f3a; border-radius:6px; padding:6px 11px; font-size:13px; cursor:pointer; margin-inline-start:4px; }
   header .layouts button.on { background:#1f6feb; color:#fff; border-color:#1f6feb; }
   header .count { background:#0d1117; border:1px solid #2a2f3a; padding:4px 10px; border-radius:12px; font-size:13px; white-space:nowrap; }
@@ -23,32 +21,28 @@
   .cell { background:#000; border:1px solid #222; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
   .cell .player { position:relative; flex:1 1 auto; background:#000; min-height:0; }
   .cell iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
-  .cell .ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#3a4150; font-size:13px; text-align:center; padding:8px; }
-  .cell .slot { position:absolute; top:6px; left:8px; background:#000a; color:#8b949e; font-size:11px; padding:2px 7px; border-radius:5px; z-index:2; }
-  .cell .live { position:absolute; top:6px; right:8px; background:#000a; color:#3fb950; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
-  .cell .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; }
-  .cell .bar input { min-width:0; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; }
-  .cell .bar input.name { flex:0 0 92px; direction:ltr; }
-  .cell .bar input.srt { flex:1 1 auto; direction:ltr; }
-  .cell .bar button { background:#1f6feb; color:#fff; border:0; border-radius:5px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
-  .cell .bar button.ghost { background:#263043; }
-  /* modal */
+  .cell .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a4150; font-size:12px; text-align:center; gap:4px; }
+  .cell .slot { position:absolute; top:6px; left:8px; background:#000a; color:#c9d1d9; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
+  .cell .live { position:absolute; top:6px; right:8px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
+  .cell .live.on { color:#3fb950; } .cell .live.off { color:#6e7681; }
+  .cell .bar { display:flex; gap:4px; padding:4px; background:#0d1117; flex:0 0 auto; align-items:center; }
+  .cell .bar input { min-width:0; flex:1 1 auto; background:#07090d; color:#c9d1d9; border:1px solid #263043; border-radius:5px; padding:5px 6px; font-size:11px; direction:ltr; }
+  .cell .bar button { border:0; border-radius:5px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
+  .cell .bar .link { background:#238636; color:#fff; font-weight:bold; }
+  .cell .bar .copy { background:#263043; color:#c9d1d9; }
   #modal { position:fixed; inset:0; background:#000c; display:none; align-items:center; justify-content:center; z-index:50; }
   #modal.on { display:flex; }
   .box { background:#131926; border:1px solid #2a2f3a; border-radius:12px; padding:22px; width:min(560px,92vw); }
   .box h2 { margin:0 0 4px; font-size:19px; }
-  .box p.sub { margin:0 0 18px; color:#8b949e; font-size:13px; }
+  .box p.sub { margin:0 0 16px; color:#8b949e; font-size:13px; }
   .box label { display:block; font-size:13px; color:#c9d1d9; margin:12px 0 5px; }
-  .box input { width:100%; background:#07090d; color:#e8eaed; border:1px solid #2a3550; border-radius:7px; padding:9px 10px; font-size:14px; }
-  .box input.ltr { direction:ltr; }
-  .box .linkbox { margin-top:16px; background:#0a1a12; border:1px solid #1f5c37; border-radius:8px; padding:12px; display:none; }
-  .box .linkbox.on { display:block; }
+  .box input { width:100%; background:#07090d; color:#e8eaed; border:1px solid #2a3550; border-radius:7px; padding:9px 10px; font-size:14px; direction:ltr; }
+  .box .linkbox { margin-top:14px; background:#0a1a12; border:1px solid #1f5c37; border-radius:8px; padding:12px; }
   .box .linkbox .lbl { font-size:12px; color:#3fb950; margin-bottom:6px; }
-  .box .linkbox input { direction:ltr; font-size:12px; }
+  .box .linkbox input { font-size:12px; }
   .box .acts { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
   .box .acts button { border:0; border-radius:7px; padding:10px 16px; font-size:14px; cursor:pointer; }
-  .box .acts .go { background:#238636; color:#fff; font-weight:bold; }
-  .box .acts .mail { background:#1f6feb; color:#fff; }
+  .box .acts .mail { background:#1f6feb; color:#fff; font-weight:bold; }
   .box .acts .copy { background:#263043; color:#e8eaed; }
   .box .acts .close { background:transparent; color:#8b949e; margin-inline-start:auto; }
 </style>
@@ -59,7 +53,6 @@
     <div class="t1">מערכת בונדינג לשידור חי מנייד · שילוב WIFI וסלולר</div>
     <div class="t2">חדר בקרה · <b>SATVIEW.TV</b></div>
   </div>
-  <button class="newlink" id="btnNew">➕ צור לינק לשידור</button>
   <div class="layouts" id="layouts"></div>
   <span class="count" id="count">0 חי</span>
   <a href="/recordings/" target="_blank">הקלטות ▸</a>
@@ -68,24 +61,17 @@
 
 <div id="modal">
   <div class="box">
-    <h2>צור לינק לשידור למרואיין</h2>
-    <p class="sub">המרואיין לוחץ על הלינק, מאשר מצלמה ומיקרופון בדפדפן — ומשדר. בלי התקנת אפליקציה.</p>
-
-    <label>שם המרואיין / שם המצלמה</label>
-    <input id="gName" class="ltr" placeholder="guest1">
-
+    <h2 id="mTitle">לינק שידור</h2>
+    <p class="sub">המרואיין פותח את הלינק, מאשר מצלמה+מיקרופון, ומשדר ב-1920×1080. בלי אפליקציה ובלי סיסמה.</p>
     <label>אימייל של המרואיין (לא חובה)</label>
-    <input id="gMail" class="ltr" type="email" placeholder="guest@example.com">
-
-    <div class="linkbox" id="linkBox">
-      <div class="lbl">✓ הלינק מוכן — שלח אותו למרואיין</div>
+    <input id="gMail" type="email" placeholder="guest@example.com">
+    <div class="linkbox">
+      <div class="lbl">✓ לינק השידור למסך הזה</div>
       <input id="gLink" readonly>
     </div>
-
     <div class="acts">
-      <button class="go" id="btnGen">צור לינק</button>
       <button class="mail" id="btnMail">שלח במייל</button>
-      <button class="copy" id="btnCopy">העתק</button>
+      <button class="copy" id="btnCopy">העתק לינק</button>
       <button class="close" id="btnClose">סגור</button>
     </div>
   </div>
@@ -96,22 +82,22 @@ const HOST = location.hostname;
 const grid = document.getElementById('grid');
 const countEl = document.getElementById('count');
 const LAYOUTS = [ {n:4,c:2}, {n:9,c:3}, {n:16,c:4}, {n:25,c:5} ];
-
 let layoutIdx = parseInt(localStorage.getItem('layoutIdx')||'1');
-let slots = JSON.parse(localStorage.getItem('slots')||'[]');
 let live = [];
 
-function save(){ localStorage.setItem('layoutIdx',layoutIdx); localStorage.setItem('slots',JSON.stringify(slots)); }
-function webrtc(name){ return location.protocol+'//'+HOST+':8889/'+name; }
-function publishLink(name){ return location.protocol+'//'+HOST+'/guest/?cam='+name; }
-function srtUrl(name){ return 'srt://'+HOST+':8890?streamid=read:'+name; }
+/* Screen i (1-based)  ->  camera "camI"  ->  dedicated SRT port 9000+i */
+const camOf  = i => 'cam' + i;
+const portOf = i => 9000 + i;
+const srtOf  = i => 'srt://' + HOST + ':' + portOf(i);
+const webrtcOf = i => location.protocol + '//' + HOST + ':8889/' + camOf(i);
+const guestOf  = i => location.protocol + '//' + HOST + '/guest/?cam=' + camOf(i);
 
 function buildLayoutButtons(){
   const box=document.getElementById('layouts'); box.innerHTML='';
   LAYOUTS.forEach((L,i)=>{
     const b=document.createElement('button'); b.textContent=L.c+'×'+L.c;
     if(i===layoutIdx) b.className='on';
-    b.onclick=()=>{ layoutIdx=i; save(); render(); };
+    b.onclick=()=>{ layoutIdx=i; localStorage.setItem('layoutIdx',i); render(); };
     box.appendChild(b);
   });
 }
@@ -121,94 +107,71 @@ function render(){
   grid.style.gridTemplateColumns='repeat('+L.c+',1fr)';
   grid.style.gridTemplateRows='repeat('+Math.ceil(L.n/L.c)+',1fr)';
   grid.innerHTML='';
-  for(let i=0;i<L.n;i++){
-    const name=slots[i]||'';
+  for(let i=1;i<=L.n;i++){
+    const cam=camOf(i), isLive=live.includes(cam);
     const cell=document.createElement('div'); cell.className='cell';
+
     const player=document.createElement('div'); player.className='player';
-    if(name){
-      const f=document.createElement('iframe'); f.src=webrtc(name); f.allow='autoplay; fullscreen';
+    if(isLive){
+      const f=document.createElement('iframe'); f.src=webrtcOf(i); f.allow='autoplay; fullscreen';
       player.appendChild(f);
     } else {
-      const ph=document.createElement('div'); ph.className='ph'; ph.textContent='ריק — הקלד שם מצלמה למטה';
+      const ph=document.createElement('div'); ph.className='ph';
+      ph.innerHTML='<div>אין שידור</div><div style="font-size:11px">שלח לינק או שדר מהאפליקציה</div>';
       player.appendChild(ph);
     }
-    const slot=document.createElement('div'); slot.className='slot'; slot.textContent='#'+(i+1);
-    player.appendChild(slot);
-    if(name){ const lv=document.createElement('div'); lv.className='live'; lv.textContent=(live.includes(name)?'● LIVE':'○ אין'); player.appendChild(lv); }
+    const sl=document.createElement('div'); sl.className='slot'; sl.textContent='#'+i+' · '+cam.toUpperCase();
+    const lv=document.createElement('div'); lv.className='live '+(isLive?'on':'off'); lv.textContent=isLive?'● LIVE':'○ אין';
+    player.appendChild(sl); player.appendChild(lv);
 
     const bar=document.createElement('div'); bar.className='bar';
-    const nameInp=document.createElement('input'); nameInp.className='name'; nameInp.placeholder='שם מצלמה'; nameInp.value=name; nameInp.dir='ltr';
-    const loadBtn=document.createElement('button'); loadBtn.textContent='טען';
-    const srtInp=document.createElement('input'); srtInp.className='srt'; srtInp.value=name?srtUrl(name):''; srtInp.placeholder='כתובת SRT';
-    const copyBtn=document.createElement('button'); copyBtn.className='ghost'; copyBtn.textContent='העתק';
-    const assign=()=>{ slots[i]=nameInp.value.trim(); save(); render(); };
-    loadBtn.onclick=assign;
-    nameInp.onkeydown=(e)=>{ if(e.key==='Enter') assign(); };
+    const linkBtn=document.createElement('button'); linkBtn.className='link'; linkBtn.textContent='🔗 צור לינק';
+    linkBtn.onclick=()=>openModal(i);
+    const srtInp=document.createElement('input'); srtInp.value=srtOf(i); srtInp.title='כתובת SRT ייחודית למסך זה (פורט '+portOf(i)+')';
+    const copyBtn=document.createElement('button'); copyBtn.className='copy'; copyBtn.textContent='העתק';
     copyBtn.onclick=()=>{ srtInp.select(); navigator.clipboard.writeText(srtInp.value).then(()=>{copyBtn.textContent='✓'; setTimeout(()=>copyBtn.textContent='העתק',1200);}).catch(()=>document.execCommand('copy')); };
-    bar.appendChild(nameInp); bar.appendChild(loadBtn); bar.appendChild(srtInp); bar.appendChild(copyBtn);
+    bar.appendChild(linkBtn); bar.appendChild(srtInp); bar.appendChild(copyBtn);
+
     cell.appendChild(player); cell.appendChild(bar);
     grid.appendChild(cell);
   }
 }
 
+/* ---- per-screen guest link modal ---- */
+const modal=document.getElementById('modal'), gMail=document.getElementById('gMail'), gLink=document.getElementById('gLink');
+let curScreen=1;
+function openModal(i){
+  curScreen=i;
+  document.getElementById('mTitle').textContent='לינק שידור · מסך #'+i+' ('+camOf(i).toUpperCase()+')';
+  gLink.value=guestOf(i); gMail.value='';
+  modal.classList.add('on');
+}
+document.getElementById('btnClose').onclick=()=>modal.classList.remove('on');
+modal.onclick=e=>{ if(e.target===modal) modal.classList.remove('on'); };
+document.getElementById('btnCopy').onclick=()=>{
+  navigator.clipboard.writeText(gLink.value).then(()=>{ const b=document.getElementById('btnCopy'); b.textContent='הועתק ✓'; setTimeout(()=>b.textContent='העתק לינק',1500); });
+};
+document.getElementById('btnMail').onclick=()=>{
+  const subject=encodeURIComponent('לינק לשידור חי · SATVIEW.TV');
+  const body=encodeURIComponent(
+    'שלום,\n\nלחץ/י על הלינק כדי לשדר אלינו בשידור חי:\n\n'+gLink.value+
+    '\n\nהוראות:\n1. פתח/י בטלפון (Chrome / Safari).\n2. החזק/י את הטלפון לרוחב.\n'+
+    '3. אשר/י גישה למצלמה ולמיקרופון.\n4. לחץ/י "התחל שידור".\n\nלא צריך להתקין שום אפליקציה.\n\nSATVIEW.TV'
+  );
+  window.location.href='mailto:'+encodeURIComponent(gMail.value.trim())+'?subject='+subject+'&body='+body;
+};
+
 async function poll(){
   try{
     const r=await fetch('/api/v3/paths/list'); const d=await r.json();
-    live=(d.items||[]).filter(i=>i.ready).map(i=>i.name);
-    let changed=false;
-    live.forEach(n=>{ if(!slots.includes(n)){ const idx=slots.findIndex((s,i)=>!s && i<LAYOUTS[layoutIdx].n); if(idx>=0){ slots[idx]=n; changed=true; } else if(slots.length<LAYOUTS[layoutIdx].n){ slots.push(n); changed=true; } } });
+    const now=(d.items||[]).filter(i=>i.ready).map(i=>i.name);
+    const changed = now.join(',')!==live.join(',');
+    live=now;
     countEl.textContent=live.length+' חי';
-    if(changed){ save(); render(); } else { document.querySelectorAll('.cell .live').forEach((el,i)=>{ const nm=slots[i]; if(nm) el.textContent=live.includes(nm)?'● LIVE':'○ אין'; }); }
+    if(changed) render();
   }catch(e){ countEl.textContent='שגיאת חיבור'; }
 }
-
-/* ---------- guest link modal ---------- */
-const modal=document.getElementById('modal');
-const gName=document.getElementById('gName'), gMail=document.getElementById('gMail'), gLink=document.getElementById('gLink'), linkBox=document.getElementById('linkBox');
-
-function randName(){ return 'guest-'+Math.random().toString(36).slice(2,8); }
-
-document.getElementById('btnNew').onclick=()=>{
-  gName.value=randName(); gMail.value=''; gLink.value=''; linkBox.classList.remove('on');
-  modal.classList.add('on'); gName.focus();
-};
-document.getElementById('btnClose').onclick=()=>modal.classList.remove('on');
-modal.onclick=(e)=>{ if(e.target===modal) modal.classList.remove('on'); };
-
-function genLink(){
-  const n=(gName.value.trim()||randName()).replace(/[^a-zA-Z0-9_-]/g,'');
-  gName.value=n;
-  gLink.value=publishLink(n);
-  linkBox.classList.add('on');
-  // reserve a grid slot so the operator sees it when the guest goes live
-  if(!slots.includes(n)){
-    const idx=slots.findIndex((s,i)=>!s && i<LAYOUTS[layoutIdx].n);
-    if(idx>=0) slots[idx]=n; else if(slots.length<LAYOUTS[layoutIdx].n) slots.push(n);
-    save(); render();
-  }
-  return gLink.value;
-}
-document.getElementById('btnGen').onclick=genLink;
-
-document.getElementById('btnCopy').onclick=()=>{
-  const l=gLink.value||genLink();
-  navigator.clipboard.writeText(l).then(()=>{ const b=document.getElementById('btnCopy'); b.textContent='הועתק ✓'; setTimeout(()=>b.textContent='העתק',1500); });
-};
-
-document.getElementById('btnMail').onclick=()=>{
-  const l=gLink.value||genLink();
-  const to=gMail.value.trim();
-  const subject=encodeURIComponent('לינק לשידור חי · SATVIEW.TV');
-  const body=encodeURIComponent(
-    'שלום,\n\nלחץ/י על הלינק הבא כדי לשדר אלינו בשידור חי:\n\n'+l+
-    '\n\nהוראות:\n1. פתח/י את הלינק בטלפון או במחשב (עדיף Chrome / Safari).\n'+
-    '2. אשר/י גישה למצלמה ולמיקרופון.\n3. לחץ/י על כפתור השידור — וזהו, את/ה בשידור.\n\n'+
-    'לא צריך להתקין שום אפליקציה.\n\nSATVIEW.TV'
-  );
-  window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+subject+'&body='+body;
-};
-
-buildLayoutButtons(); render(); poll(); setInterval(poll,5000);
+buildLayoutButtons(); render(); poll(); setInterval(poll,4000);
 </script>
 </body>
 </html>
