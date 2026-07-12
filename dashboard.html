@@ -89,7 +89,7 @@ let live = [];
 const camOf  = i => 'cam' + i;
 const portOf = i => 9000 + i;
 const srtOf  = i => 'srt://' + HOST + ':' + portOf(i);
-const webrtcOf = i => location.protocol + '//' + HOST + ':8889/' + camOf(i);
+const webrtcOf = i => location.protocol + '//' + HOST + ':8889/' + camOf(i) + '_prev';
 const guestOf  = i => location.protocol + '//' + HOST + '/guest/?cam=' + camOf(i);
 
 function buildLayoutButtons(){
