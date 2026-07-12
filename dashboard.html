@@ -103,7 +103,7 @@ let live = [];
 
 function save(){ localStorage.setItem('layoutIdx',layoutIdx); localStorage.setItem('slots',JSON.stringify(slots)); }
 function webrtc(name){ return location.protocol+'//'+HOST+':8889/'+name; }
-function publishLink(name){ return location.protocol+'//'+HOST+':8889/'+name+'/publish'; }
+function publishLink(name){ return location.protocol+'//'+HOST+'/guest/?cam='+name; }
 function srtUrl(name){ return 'srt://'+HOST+':8890?streamid=read:'+name; }
 
 function buildLayoutButtons(){

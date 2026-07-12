@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SATVIEW.TV · שידור חי</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; margin:0; }
+  body { background:#07090d; color:#e8eaed; font-family:Arial,Helvetica,sans-serif; display:flex; flex-direction:column; }
+  header { padding:12px 16px; background:#111722; border-bottom:1px solid #2a2f3a; text-align:center; flex:0 0 auto; }
+  header .t1 { font-size:15px; font-weight:bold; }
+  header .t2 { font-size:12px; color:#8b949e; margin-top:2px; }
+  header b { color:#58a6ff; letter-spacing:1px; }
+  #wrap { flex:1 1 auto; position:relative; background:#000; min-height:0; }
+  video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #badge { position:absolute; top:10px; right:10px; background:#000b; padding:5px 12px; border-radius:8px; font-size:13px; font-weight:bold; z-index:3; }
+  #badge.live { color:#3fb950; }
+  #badge.off { color:#8b949e; }
+  #res { position:absolute; top:10px; left:10px; background:#000b; padding:5px 10px; border-radius:8px; font-size:12px; color:#8b949e; z-index:3; direction:ltr; }
+  footer { padding:14px 16px 22px; background:#0d1117; flex:0 0 auto; }
+  #msg { text-align:center; font-size:13px; color:#8b949e; margin-bottom:10px; min-height:18px; }
+  #msg.err { color:#f85149; }
+  #msg.ok { color:#3fb950; }
+  button { width:100%; border:0; border-radius:12px; padding:18px; font-size:19px; font-weight:bold; cursor:pointer; }
+  #go { background:#238636; color:#fff; }
+  #go:disabled { background:#21262d; color:#6e7681; }
+  #stop { background:#da3633; color:#fff; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="t1">שידור חי · <b>SATVIEW.TV</b></div>
+  <div class="t2" id="camName">—</div>
+</header>
+
+<div id="wrap">
+  <video id="v" autoplay muted playsinline></video>
+  <div id="badge" class="off">○ לא משדר</div>
+  <div id="res"></div>
+</div>
+
+<footer>
+  <div id="msg">לחץ "התחל שידור" ואשר גישה למצלמה ולמיקרופון</div>
+  <button id="go">🔴 התחל שידור</button>
+  <button id="stop">■ עצור שידור</button>
+</footer>
+
+<script>
+const params = new URLSearchParams(location.search);
+const CAM = (params.get('cam') || 'guest').replace(/[^a-zA-Z0-9_-]/g,'');
+const WHIP = 'https://' + location.hostname + ':8889/' + CAM + '/whip';
+
+const v = document.getElementById('v');
+const msg = document.getElementById('msg');
+const badge = document.getElementById('badge');
+const resEl = document.getElementById('res');
+const goBtn = document.getElementById('go');
+const stopBtn = document.getElementById('stop');
+document.getElementById('camName').textContent = 'מצלמה: ' + CAM;
+
+let pc = null, stream = null;
+
+function setMsg(t, cls){ msg.textContent = t; msg.className = cls || ''; }
+
+async function start(){
+  goBtn.disabled = true;
+  setMsg('מבקש גישה למצלמה ולמיקרופון...');
+  try {
+    // Force Full HD 1920x1080
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30}, facingMode:'environment' },
+      audio: { echoCancellation:true, noiseSuppression:true }
+    });
+  } catch (e) {
+    setMsg('לא ניתן לגשת למצלמה/מיקרופון: ' + e.message, 'err');
+    goBtn.disabled = false; return;
+  }
+
+  v.srcObject = stream;
+  const st = stream.getVideoTracks()[0].getSettings();
+  resEl.textContent = (st.width||'?') + '×' + (st.height||'?');
+
+  setMsg('מתחבר לשרת...');
+  try {
+    pc = new RTCPeerConnection({ iceServers:[{ urls:'stun:stun.l.google.com:19302' }] });
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // wait for ICE gathering (non-trickle WHIP)
+    await new Promise(res => {
+      if (pc.iceGatheringState === 'complete') return res();
+      const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); res(); } };
+      pc.addEventListener('icegatheringstatechange', check);
+      setTimeout(res, 3000);
+    });
+
+    const r = await fetch(WHIP, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/sdp' },
+      body: pc.localDescription.sdp
+    });
+    if (!r.ok) throw new Error('השרת החזיר ' + r.status);
+    const answer = await r.text();
+    await pc.setRemoteDescription({ type:'answer', sdp: answer });
+
+    badge.textContent = '● בשידור'; badge.className = 'live';
+    setMsg('אתה בשידור חי ✓', 'ok');
+    goBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+  } catch (e) {
+    setMsg('שגיאת חיבור לשרת: ' + e.message, 'err');
+    stop();
+    goBtn.disabled = false;
+  }
+}
+
+function stop(){
+  if (pc) { try { pc.close(); } catch(e){} pc = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  v.srcObject = null;
+  badge.textContent = '○ לא משדר'; badge.className = 'off';
+  resEl.textContent = '';
+  goBtn.style.display = 'block'; goBtn.disabled = false;
+  stopBtn.style.display = 'none';
+  setMsg('השידור נעצר. לחץ "התחל שידור" כדי לחזור.');
+}
+
+goBtn.onclick = start;
+stopBtn.onclick = stop;
+window.addEventListener('beforeunload', stop);
+</script>
+</body>
+</html>
