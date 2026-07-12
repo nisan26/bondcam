@@ -110,7 +110,14 @@ async function applyBitrates(){
     if(!s.track) continue;
     const p = s.getParameters();
     if(!p.encodings || !p.encodings.length) p.encodings=[{}];
-    p.encodings[0].maxBitrate = (s.track.kind==='video') ? VIDEO_KBPS*1000 : AUDIO_BPS;
+    if(s.track.kind === 'video'){
+      p.encodings[0].maxBitrate = VIDEO_KBPS*1000;
+      p.encodings[0].scaleResolutionDownBy = 1;      // never downscale below 1920x1080
+      p.encodings[0].maxFramerate = 30;
+      p.degradationPreference = 'maintain-resolution'; // drop fps, never resolution
+    } else {
+      p.encodings[0].maxBitrate = AUDIO_BPS;
+    }
     try { await s.setParameters(p); } catch(e){}
   }
 }
