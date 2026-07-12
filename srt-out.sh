@@ -1,12 +1,17 @@
 #!/bin/sh
 # Spawned by MediaMTX when a camera goes live (runOnReady).
-#  1) SRT out (port 9000+N) : FULL HD - original video untouched + AAC audio
+#  1) SRT out : cam N -> 9000+N | app N -> 9100+N  (FULL HD, video untouched + AAC)
 #  2) camN_prev             : 720p H264 + OPUS audio, for the control-room wall + audio meter
 CAM="$1"
 case "$CAM" in *_prev) exit 0 ;; esac
 N=$(printf '%s' "$CAM" | tr -cd '0-9')
 [ -z "$N" ] && exit 0
-PORT=$((9000 + N))
+# cam1..camN (guest links) -> 9001..  |  app1..appN (BondCam app) -> 9101..
+case "$CAM" in
+  app*) BASE=9100 ;;
+  *)    BASE=9000 ;;
+esac
+PORT=$((BASE + N))
 SRC="rtsp://127.0.0.1:8554/${CAM}"
 sleep 1
 
