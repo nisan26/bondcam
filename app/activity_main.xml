@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
+
+    <com.pedro.library.view.OpenGlView
+        android:id="@+id/openGlView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="330dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|top"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:background="#88000000">
+
+        <TextView
+            android:id="@+id/tvReporter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#58A6FF"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:paddingBottom="6dp"
+            android:text="לא הוגדר" />
+
+        <EditText
+            android:id="@+id/etHost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/server_host"
+            android:text="satview.ddns.net"
+            android:inputType="textUri"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAAAAA" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etPort"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="@string/server_port"
+                android:text="8890"
+                android:inputType="number"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA" />
+
+            <EditText
+                android:id="@+id/etBitrate"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="@string/bitrate"
+                android:text="3500"
+                android:inputType="number"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etStreamId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/stream_id"
+            android:text="publish:app1"
+            android:inputType="text"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAAAAA" />
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/start" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#00FF00"
+            android:textSize="12sp"
+            android:text="מוכן" />
+    </LinearLayout>
+</FrameLayout>
