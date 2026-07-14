@@ -13,51 +13,13 @@ jobs:
       - name: Unzip project
         run: unzip -o bonding-project.zip
 
-      # The zip is the frozen skeleton; app/ holds the live sources so they can be
-      # edited on GitHub without repacking a binary.
       - name: Apply latest app sources
         run: |
           SRC=bonding-project/android/BondCam/app/src/main
-          cp app/MainActivity.kt    "$SRC/java/com/satview/bondcam/MainActivity.kt"
+          cp app/MainActivity.kt     "$SRC/java/com/satview/bondcam/MainActivity.kt"
           cp app/AndroidManifest.xml "$SRC/AndroidManifest.xml"
           cp app/activity_main.xml   "$SRC/res/layout/activity_main.xml"
-          echo "--- applied ---"
           grep -c handleSetupLink "$SRC/java/com/satview/bondcam/MainActivity.kt"
-          grep -c tvReporter       "$SRC/res/layout/activity_main.xml"
-          grep -c bondcam          "$SRC/AndroidManifest.xml"
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-
-      - name: Build debug APK
-        working-directory: bonding-project/android/BondCam
-        run: gradle assembleDebug --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: BondCam-APK
-          path: bonding-project/android/BondCam/app/build/outputs/apk/debug/app-debug.apk
-name: Build BondCam APK
-
-on:
-  push:
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Unzip project
-        run: unzip -o bonding-project.zip
 
       - uses: actions/setup-java@v4
         with:
