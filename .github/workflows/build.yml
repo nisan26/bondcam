@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,8 +37,20 @@ jobs:
         working-directory: bonding-project/android/BondCam
         run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Rename APK
+        run: cp bonding-project/android/BondCam/app/build/outputs/apk/debug/app-debug.apk bondcam.apk
+
+      - name: Upload APK (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: BondCam-APK
-          path: bonding-project/android/BondCam/app/build/outputs/apk/debug/app-debug.apk
+          path: bondcam.apk
+
+      # Publish a public, always-current download URL:
+      #   https://github.com/nisan26/bondcam/releases/latest/download/bondcam.apk
+      - name: Publish APK to the "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: BondCam (latest build)
+          files: bondcam.apk
