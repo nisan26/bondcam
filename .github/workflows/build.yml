@@ -20,6 +20,7 @@ jobs:
         run: |
           SRC=bonding-project/android/BondCam/app/src/main
           cp app/MainActivity.kt     "$SRC/java/com/satview/bondcam/MainActivity.kt"
+          cp app/SrtlaSender.kt      "$SRC/java/com/satview/bondcam/srtla/SrtlaSender.kt"
           cp app/AndroidManifest.xml "$SRC/AndroidManifest.xml"
           cp app/activity_main.xml   "$SRC/res/layout/activity_main.xml"
           grep -c handleSetupLink "$SRC/java/com/satview/bondcam/MainActivity.kt"
