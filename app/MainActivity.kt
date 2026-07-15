@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
     companion object {
         private const val LOCAL_SRT_PORT = 6000
         private const val DIRECT_PORT = 8890
+        private const val BONDING_PORT = 5001
         private const val PREFS = "bondcam"
     }
 
@@ -120,7 +121,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
     private fun loadPrefs() {
         val p = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         etHost.setText(p.getString("host", "satview.ddns.net"))
-        etPort.setText(p.getString("port", DIRECT_PORT.toString()))
+        etPort.setText(p.getString("port", BONDING_PORT.toString()))
         etBitrate.setText(p.getString("bitrate", "3500"))
         etStreamId.setText(p.getString("sid", "publish:app1"))
         reporterName = p.getString("name", "") ?: ""
