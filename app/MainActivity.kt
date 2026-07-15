@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.pedro.common.ConnectChecker
 import com.pedro.common.VideoCodec
+import com.pedro.common.socket.base.SocketType
 import com.pedro.library.srt.SrtCamera2
 import com.pedro.library.view.OpenGlView
 import com.satview.bondcam.srtla.BondingNetworks
@@ -194,6 +195,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             setInputsEnabled(false)
             tvStatus.text = "מתחבר..."
             StreamService.start(this)
+            cam.streamClient.setSocketType(SocketType.JAVA)
             cam.streamClient.setReTries(1000)
             cam.startStream("srt://$host:$port?streamid=$streamId")
             return
@@ -224,6 +226,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
                 val timedOut = System.currentTimeMillis() - startedAt > 20000
                 if (ready || timedOut) {
                     srtStarted = true
+                    cam.streamClient.setSocketType(SocketType.JAVA)
                     cam.streamClient.setReTries(1000)
                     cam.startStream("srt://127.0.0.1:$LOCAL_SRT_PORT?streamid=$streamId")
                     ui.post(statusTicker)
