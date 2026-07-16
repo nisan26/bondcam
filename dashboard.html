@@ -24,7 +24,24 @@
   .cell { background:#000; border:1px solid #222; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
   .stage { position:relative; flex:1 1 auto; min-height:0; display:flex; }
   .stage video { flex:1 1 auto; width:100%; height:100%; object-fit:contain; background:#000; min-width:0; }
-  .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a4150; font-size:12px; text-align:center; gap:4px; }
+  /* no-signal: SMPTE colour bars + SATVIEW caption */
+  .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        text-align:center; overflow:hidden;
+        background:linear-gradient(to right,
+          #c0c0c0 0%, #c0c0c0 14.28%, #c0c000 14.28%, #c0c000 28.57%,
+          #00c0c0 28.57%, #00c0c0 42.85%, #00c000 42.85%, #00c000 57.14%,
+          #c000c0 57.14%, #c000c0 71.42%, #c00000 71.42%, #c00000 85.71%,
+          #0000c0 85.71%, #0000c0 100%); }
+  .ph::after { content:''; position:absolute; left:0; right:0; bottom:0; height:22%;
+        background:linear-gradient(to right,
+          #0000c0 0%, #0000c0 14.28%, #131313 14.28%, #131313 28.57%,
+          #c000c0 28.57%, #c000c0 42.85%, #131313 42.85%, #131313 57.14%,
+          #00c0c0 57.14%, #00c0c0 71.42%, #131313 71.42%, #131313 85.71%,
+          #c0c0c0 85.71%, #c0c0c0 100%); }
+  .ph .cap { position:relative; z-index:2; background:#000000cc; color:#fff; font-weight:bold;
+             letter-spacing:2px; padding:8px 18px; border-radius:8px; border:1px solid #ffffff40;
+             font-size:clamp(12px, 2.2vw, 26px); text-shadow:0 2px 6px #000; }
+  .ph .cap small { display:block; font-size:11px; font-weight:normal; letter-spacing:0; color:#c9d1d9; margin-top:3px; }
   .slot { position:absolute; top:6px; left:8px; background:#000a; color:#c9d1d9; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
   .live { position:absolute; top:6px; right:46px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
   .live.on { color:#3fb950; } .live.off { color:#6e7681; }
@@ -52,7 +69,55 @@
   .box .acts .mail { background:#1f6feb; color:#fff; font-weight:bold; }
   .box .acts .copy { background:#263043; color:#e8eaed; }
   .box .acts .close { background:transparent; color:#8b949e; margin-inline-start:auto; }
+  .box .qrwrap { display:flex; gap:14px; align-items:center; margin-top:14px; background:#0a1a12;
+                 border:1px solid #1f5c37; border-radius:8px; padding:12px; }
+  .box .qrwrap .qr { background:#fff; padding:7px; border-radius:6px; flex:0 0 auto; line-height:0; }
+  .box .qrwrap .txt { flex:1; min-width:0; }
+  .box .qrwrap .txt .lbl { font-size:12px; color:#3fb950; margin-bottom:6px; }
+  .box .acts .wa { background:#25d366; color:#062; font-weight:bold; }
+
+  /* ---------- LiveU-style bonding monitor ---------- */
+  #tab-bond { flex:1 1 auto; min-height:0; overflow:hidden; }
+  .lu-wrap { display:flex; height:100%; min-height:0; direction:rtl; }
+  .lu-list { flex:0 0 240px; background:#0d1117; border-inline-end:1px solid #21262d;
+             overflow-y:auto; padding:8px 0; }
+  .lu-list h3 { margin:2px 14px 8px; font-size:11px; color:#8b949e; font-weight:bold; letter-spacing:1px; }
+  .lu-unit { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer;
+             border-inline-start:3px solid transparent; }
+  .lu-unit:hover { background:#161b22; }
+  .lu-unit.sel { background:#1c2536; border-inline-start-color:#1f6feb; }
+  .lu-unit .dot { width:9px; height:9px; border-radius:50%; background:#30363d; flex:0 0 auto; }
+  .lu-unit.live .dot { background:#3fb950; box-shadow:0 0 6px #3fb95088; }
+  .lu-unit .nm { flex:1; min-width:0; }
+  .lu-unit .nm .a { font-size:13px; font-weight:bold; color:#c9d1d9; }
+  .lu-unit .nm .b { font-size:10px; color:#6e7681; direction:ltr; text-align:right; }
+  .lu-unit .rt { font-size:11px; color:#3fb950; direction:ltr; white-space:nowrap; }
+  .lu-main { flex:1 1 auto; min-width:0; overflow-y:auto; padding:14px 18px; background:#07090d; }
+  .lu-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .lu-head .ttl { font-size:20px; font-weight:bold; color:#fff; }
+  .lu-head .sub { font-size:12px; color:#8b949e; direction:ltr; }
+  .lu-badge { margin-inline-start:auto; padding:6px 14px; border-radius:8px; background:#21262d;
+              color:#8b949e; font-weight:bold; font-size:13px; }
+  .lu-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:14px; }
+  .lu-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:14px 16px;
+             text-align:center; transition:background .4s, border-color .4s; }
+  .lu-card .k { font-size:11px; color:#8b949e; margin-bottom:6px; }
+  .lu-card .v { font-size:36px; font-weight:bold; color:#c9d1d9; line-height:1; }
+  .lu-card .s { font-size:11px; color:#8b949e; margin-top:6px; }
+  .lu-card .ip { font-size:13px; font-weight:bold; color:#c9d1d9; direction:ltr; }
+  .lu-card.p1 .k { color:#58a6ff; }
+  .lu-card.p2 .k { color:#e3b341; }
+  .lu-panel { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .lu-panel .hd { display:flex; justify-content:space-between; margin-bottom:10px; }
+  .lu-panel .hd .l { font-size:12px; color:#8b949e; }
+  .lu-panel .hd .r { font-size:11px; color:#58a6ff; }
+  .lu-guide { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:12px 16px; }
+  .lu-guide summary { cursor:pointer; color:#58a6ff; font-size:13px; font-weight:bold; }
+  .lu-guide ol { color:#c9d1d9; font-size:13px; margin:12px 0 2px; padding-right:20px; line-height:2.2; }
+  .lu-guide p { color:#8b949e; font-size:11px; margin:6px 0 0; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <header>
@@ -63,9 +128,11 @@
   <div class="tabs" id="tabs">
     <button data-mode="cam" class="on">🔗 לינקים</button>
     <button data-mode="app">📱 אפליקציה</button>
+    <button data-mode="bond">📡 בונדינג</button>
   </div>
   <div class="layouts" id="layouts"></div>
   <span class="count" id="count">0 חי</span>
+  <a href="/app/" target="_blank">⬇ הורדות</a>
   <a href="/recordings/" target="_blank">הקלטות ▸</a>
 </header>
 <div id="grid"></div>
@@ -75,13 +142,16 @@
     <h2 id="aTitle">הגדרות אפליקציה</h2>
     <p class="sub">הזן את הפרטים ב-BondCam (או ב-IRL Pro לבונדינג אמיתי) כדי לשדר למסך הזה.</p>
 
+    <label>שם הכתב</label>
+    <input id="aName" placeholder="דני כהן">
+
     <label>שרת</label>
     <input id="aHost" readonly>
 
     <label>פורט — שידור ישיר (BondCam)</label>
     <input id="aPort" readonly>
 
-    <label>פורט — בונדינג SRTLA (סלולר + WiFi, ב-IRL Pro)</label>
+    <label>פורט — בונדינג SRTLA (סלולר + WiFi)</label>
     <input id="aBond" readonly>
 
     <label>Stream ID</label>
@@ -92,8 +162,19 @@
       <input id="aSrt" readonly>
     </div>
 
+    <div class="qrwrap">
+      <div class="qr" id="aQr"></div>
+      <div class="txt">
+        <div class="lbl">לינק הגדרה לכתב — האפליקציה תגדיר את עצמה</div>
+        <input id="aDeep" readonly>
+      </div>
+    </div>
+
     <div class="acts">
-      <button class="mail" id="aCopyAll">העתק הכל</button>
+      <button class="wa" id="aWa">שלח בוואטסאפ</button>
+      <button class="mail" id="aMailBtn">שלח במייל</button>
+      <button class="copy" id="aPng">QR הורד</button>
+      <button class="copy" id="aCopyAll">העתק לינק</button>
       <button class="close" id="aClose">סגור</button>
     </div>
   </div>
@@ -283,7 +364,7 @@ function stopPlayer(i){
 function buildTabs(){
   document.querySelectorAll('#tabs button').forEach(b=>{
     b.classList.toggle('on', b.dataset.mode===mode);
-    b.onclick=()=>{ mode=b.dataset.mode; localStorage.setItem('mode',mode); buildTabs(); poll(); render(); };
+    b.onclick=()=>{ mode=b.dataset.mode; localStorage.setItem('mode',mode); buildTabs(); if(mode!=='bond'){ poll(); render(); } };
   });
 }
 
@@ -297,7 +378,23 @@ function buildLayoutButtons(){
   });
 }
 
+/* <cam>_prev is produced by ffmpeg (runOnReady) and appears 1-3s AFTER the camera
+   path goes ready - so retry the WHEP handshake instead of giving up. */
+function ensurePlayer(i, video, mcv){
+  const myGen = gen;
+  const attempt = async (n) => {
+    if(myGen !== gen) return;
+    if(!live.includes(camOf(i))) return;
+    try { await startPlayer(i, video, mcv); }
+    catch(e){ if(n < 40) setTimeout(()=>attempt(n+1), 1500); }
+  };
+  attempt(0);
+}
+
+let gen = 0;
 function render(){
+  if(mode==='bond') return;
+  gen++;
   Object.keys(players).forEach(k=>stopPlayer(k));
   const L=LAYOUTS[layoutIdx];
   grid.style.gridTemplateColumns='repeat('+L.c+',1fr)';
@@ -325,9 +422,9 @@ function render(){
 
     if(!isLive){
       const ph=document.createElement('div'); ph.className='ph';
-      ph.innerHTML = mode==='app'
-        ? '<div>אין שידור</div><div style="font-size:11px">שדר מ-BondCam / IRL Pro</div>'
-        : '<div>אין שידור</div><div style="font-size:11px">שלח לינק למרואיין</div>';
+      const rep  = (mode==='app') ? (localStorage.getItem('rep'+i) || '') : '';
+      const hint = (mode==='app') ? (rep ? 'ממתין לשידור' : 'שלח לינק הגדרה לכתב') : 'שלח לינק למרואיין';
+      ph.innerHTML = '<div class="cap">' + (rep || ('SATVIEW ' + i)) + '<small>' + hint + '</small></div>';
       stage.appendChild(ph);
     }
     const sl=document.createElement('div'); sl.className='slot'; sl.textContent='#'+i+' · '+cam.toUpperCase();
@@ -336,7 +433,7 @@ function render(){
 
     const bar=document.createElement('div'); bar.className='bar';
     const linkBtn=document.createElement('button'); linkBtn.className='link';
-    if(mode==='app'){ linkBtn.textContent='📱 הגדרות'; linkBtn.onclick=()=>openAppModal(i); }
+    if(mode==='app'){ linkBtn.textContent='📱 הגדר כתב'; linkBtn.onclick=()=>openAppModal(i); }
     else            { linkBtn.textContent='🔗 צור לינק'; linkBtn.onclick=()=>openModal(i); }
     const srtInp=document.createElement('input'); srtInp.value=srtOf(i); srtInp.title='SRT HD ייחודי למסך זה (פורט '+portOf(i)+')';
     const copyBtn=document.createElement('button'); copyBtn.className='copy'; copyBtn.textContent='העתק';
@@ -346,7 +443,7 @@ function render(){
     cell.appendChild(stage); cell.appendChild(bar);
     grid.appendChild(cell);
 
-    if(isLive) startPlayer(i, video, mcv).catch(()=>{});
+    if(isLive) ensurePlayer(i, video, mcv);
   }
 }
 
@@ -369,30 +466,120 @@ document.getElementById('btnMail').onclick=()=>{
   window.location.href='mailto:'+encodeURIComponent(gMail.value.trim())+'?subject='+s+'&body='+b;
 };
 
-/* ---------- app settings modal ---------- */
-const appModal=document.getElementById('appModal');
+/* ---------- reporter provisioning (deep link + QR) ---------- */
+const appModal = document.getElementById('appModal');
+const aName = document.getElementById('aName'), aDeep = document.getElementById('aDeep');
+let aSlot = 1;
+const nameOf = i => localStorage.getItem('rep'+i) || '';
+
+function deepLink(i){
+  const q = new URLSearchParams({ host:HOST, port:'8890', sid:'publish:app'+i,
+                                  bitrate:'3500', name: aName.value.trim() || ('כתב '+i) });
+  return location.protocol+'//'+HOST+'/app/?' + q.toString();
+}
+function refreshDeep(){
+  const url = deepLink(aSlot);
+  aDeep.value = url;
+  const box = document.getElementById('aQr'); box.innerHTML='';
+  try { new QRCode(box, { text:url, width:126, height:126, correctLevel:QRCode.CorrectLevel.M }); }
+  catch(e){ box.textContent='QR'; }
+}
 function openAppModal(i){
+  aSlot = i;
   const cam = 'app'+i;
-  document.getElementById('aTitle').textContent = 'הגדרות אפליקציה · מסך #'+i+' ('+cam.toUpperCase()+')';
+  document.getElementById('aTitle').textContent = 'הגדרת כתב · משבצת #'+i+' ('+cam.toUpperCase()+')';
+  aName.value = nameOf(i);
   document.getElementById('aHost').value = HOST;
   document.getElementById('aPort').value = '8890';
-  document.getElementById('aBond').value = 'srtla://'+HOST+':5000';
+  document.getElementById('aBond').value = 'srtla://'+HOST+':5001';
   document.getElementById('aSid').value  = 'publish:'+cam;
   document.getElementById('aSrt').value  = 'srt://'+HOST+':'+(9100+i);
+  refreshDeep();
   appModal.classList.add('on');
 }
-document.getElementById('aClose').onclick=()=>appModal.classList.remove('on');
-appModal.onclick=e=>{ if(e.target===appModal) appModal.classList.remove('on'); };
-document.getElementById('aCopyAll').onclick=()=>{
-  const t = 'שרת: '+document.getElementById('aHost').value+
-            '\nפורט (ישיר): '+document.getElementById('aPort').value+
-            '\nבונדינג SRTLA: '+document.getElementById('aBond').value+
-            '\nStream ID: '+document.getElementById('aSid').value+
-            '\nקליטה SRT: '+document.getElementById('aSrt').value;
-  navigator.clipboard.writeText(t).then(()=>{ const b=document.getElementById('aCopyAll'); b.textContent='הועתק ✓'; setTimeout(()=>b.textContent='העתק הכל',1500); });
+aName.oninput = () => {
+  const v = aName.value.trim();
+  if(v) localStorage.setItem('rep'+aSlot, v); else localStorage.removeItem('rep'+aSlot);
+  refreshDeep(); render();
+};
+document.getElementById('aClose').onclick = () => appModal.classList.remove('on');
+appModal.onclick = e => { if(e.target===appModal) appModal.classList.remove('on'); };
+document.getElementById('aCopyAll').onclick = () => {
+  navigator.clipboard.writeText(aDeep.value).then(()=>{
+    const b=document.getElementById('aCopyAll'); b.textContent='הועתק'; setTimeout(()=>b.textContent='העתק לינק',1500);
+  });
+};
+const inviteText = () =>
+  'שלום ' + (aName.value.trim()||'') + ',\n\n' +
+  '1. התקן את BondCam: https://' + HOST + '/app/\n' +
+  '2. לחץ על הלינק הזה - האפליקציה תגדיר את עצמה:\n' + aDeep.value + '\n' +
+  '3. אשר מצלמה ומיקרופון ולחץ "התחל שידור".\n\nSATVIEW.TV';
+document.getElementById('aWa').onclick = () =>
+  window.open('https://wa.me/?text=' + encodeURIComponent(inviteText()), '_blank');
+document.getElementById('aMailBtn').onclick = () => {
+  window.location.href = 'mailto:?subject=' + encodeURIComponent('הגדרת שידור · SATVIEW.TV') +
+                         '&body=' + encodeURIComponent(inviteText());
+};
+
+/* Downloadable QR card: reporter name, slot, deep link, SRT port, download URL. */
+document.getElementById('aPng').onclick = () => {
+  const src = document.querySelector('#aQr canvas') || document.querySelector('#aQr img');
+  if(!src) return;
+  const W = 660, H = 940;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+
+  g.fillStyle = '#0b1017'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#1f6feb'; g.fillRect(0,0,W,8);
+
+  const rep  = aName.value.trim() || ('כתב ' + aSlot);
+  const cam  = 'APP' + aSlot;
+  const port = 9100 + aSlot;
+
+  g.textAlign = 'center';
+  g.fillStyle = '#58a6ff'; g.font = 'bold 30px Arial';
+  g.fillText('SATVIEW.TV', W/2, 66);
+  g.fillStyle = '#8b949e'; g.font = '17px Arial';
+  g.fillText('הגדרת שידור לכתב', W/2, 96);
+
+  g.fillStyle = '#ffffff'; g.font = 'bold 42px Arial';
+  g.fillText(rep, W/2, 156);
+  g.fillStyle = '#3fb950'; g.font = 'bold 24px Arial';
+  g.fillText('#' + aSlot + '  ·  ' + cam, W/2, 192);
+
+  const qs = 340, qx = (W-qs)/2, qy = 226;
+  g.fillStyle = '#ffffff';
+  g.fillRect(qx-16, qy-16, qs+32, qs+32);
+  g.drawImage(src, qx, qy, qs, qs);
+
+  g.fillStyle = '#e3b341'; g.font = 'bold 20px Arial';
+  g.fillText('סרוק כדי להגדיר את האפליקציה', W/2, qy + qs + 56);
+
+  const rows = [
+    ['הורדת האפליקציה', location.protocol + '//' + HOST + '/app/'],
+    ['שרת', HOST + ':8890'],
+    ['Stream ID', 'publish:app' + aSlot],
+    ['SRT', 'srt://' + HOST + ':' + port],
+    ['Video / Audio', '1920x1080  3500k / 160k']
+  ];
+  let y = qy + qs + 100;
+  for(const [k,v] of rows){
+    g.textAlign = 'right'; g.font = '17px Arial'; g.fillStyle = '#8b949e';
+    g.fillText(k, W-40, y);
+    g.textAlign = 'left'; g.font = 'bold 17px Arial'; g.fillStyle = '#7ee787';
+    g.fillText(v, 40, y);
+    y += 34;
+  }
+
+  const a = document.createElement('a');
+  a.download = 'SATVIEW-' + cam + '.png';
+  a.href = cv.toDataURL('image/png');
+  a.click();
 };
 
 async function poll(){
+  if(mode==='bond') return;
   try{
     const r=await fetch('/api/v3/paths/list'); const d=await r.json();
     const now=(d.items||[]).filter(i=>i.ready).map(i=>i.name)
@@ -404,7 +591,231 @@ async function poll(){
     if(changed) render();
   }catch(e){ countEl.textContent='שגיאת חיבור'; }
 }
-buildTabs(); buildLayoutButtons(); render(); poll(); setInterval(poll,4000);
+buildTabs(); buildLayoutButtons(); render(); poll(); setInterval(poll,2000);
+</script>
+
+<!-- ================= LiveU-style bonding monitor ================= -->
+<div id="tab-bond" style="display:none;">
+  <div class="lu-wrap">
+    <div class="lu-list" id="luList">
+      <h3>UNIT LIST · ערוצים</h3>
+      <!-- rows are generated -->
+    </div>
+    <div class="lu-main">
+      <div class="lu-head">
+        <span class="ttl" id="luTitle">APP 1</span>
+        <span class="sub" id="luSub">publish:app1</span>
+        <span class="lu-badge" id="bondStatusBadge">○ לא משדר</span>
+      </div>
+
+      <div class="lu-cards">
+        <div class="lu-card" id="bcard-bond">
+          <div class="k">נתיבי בונדינג</div>
+          <div class="v" id="bPathCount">—</div>
+          <div class="s" id="bPathLabel">מחכה לשידור</div>
+        </div>
+        <div class="lu-card">
+          <div class="k">העלאה כוללת</div>
+          <div class="v" id="bMbps" style="color:#3fb950;">—</div>
+          <div class="s">Mbps</div>
+        </div>
+        <div class="lu-card p1" id="bcard-p1">
+          <div class="k">&#128246; נתיב 1 (WiFi)</div>
+          <div class="ip" id="bP1ip">—</div>
+          <div class="s" id="bP1st">לא מחובר</div>
+        </div>
+        <div class="lu-card p2" id="bcard-p2">
+          <div class="k">&#128225; נתיב 2 (סלולר)</div>
+          <div class="ip" id="bP2ip">—</div>
+          <div class="s" id="bP2st">לא מחובר</div>
+        </div>
+      </div>
+
+      <div class="lu-panel">
+        <div class="hd">
+          <span class="l">&#128200; קצב העלאה — 60 שניות אחרונות</span>
+          <span class="r" id="bPeakLabel"></span>
+        </div>
+        <canvas id="bondChart" height="130"></canvas>
+      </div>
+
+      <details class="lu-guide">
+        <summary>&#129514; מדריך בדיקת בונדינג</summary>
+        <ol>
+          <li>שדר מ-BondCam — WiFi <b>וגם</b> סלולר דלוקים (פורט 5001)</li>
+          <li>ודא <b style="color:#3fb950;">2 נתיבים</b> — בונדינג פעיל</li>
+          <li><b>כבה WiFi</b> — הגרף נשאר יציב &#10003;</li>
+          <li>הדלק WiFi, <b>כבה סלולר</b> — שוב יציב &#10003;</li>
+          <li><span style="color:#3fb950;font-weight:bold;">בונדינג מאושר &#9989;</span></li>
+        </ol>
+        <p>WiFi = בדרך כלל ה-IP של הראוטר · סלולר = IP של הספק הסלולרי</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+var N_CH=16, bCh='app1', bChart=null, bTimer=null;
+var bLabels=[], bData=[], bP1=[], bP2=[], bPeak=0;
+
+/* ---- unit list (16 channels, LiveU style) ---- */
+function buildList(){
+  var box=document.getElementById('luList');
+  for(var i=1;i<=N_CH;i++){
+    (function(i){
+      var row=document.createElement('div');
+      row.className='lu-unit'+(('app'+i)===bCh?' sel':'');
+      row.id='lu-app'+i;
+      row.innerHTML='<span class="dot"></span>'+
+        '<span class="nm"><span class="a">APP '+i+'</span>'+
+        '<div class="b">publish:app'+i+'</div></span>'+
+        '<span class="rt" id="lu-rt-app'+i+'"></span>';
+      row.onclick=function(){ selectBondCh('app'+i); };
+      box.appendChild(row);
+    })(i);
+  }
+}
+
+window.selectBondCh=function(ch){
+  bCh=ch;
+  document.querySelectorAll('.lu-unit').forEach(function(r){r.classList.remove('sel');});
+  var row=document.getElementById('lu-'+ch); if(row) row.classList.add('sel');
+  var n=ch.replace('app','');
+  document.getElementById('luTitle').textContent='APP '+n;
+  document.getElementById('luSub').textContent='publish:'+ch;
+  bLabels=[];bData=[];bP1=[];bP2=[];bPeak=0;
+  var pl=document.getElementById('bPeakLabel'); if(pl) pl.textContent='';
+  if(bChart){
+    bChart.data.labels=[];
+    bChart.data.datasets.forEach(function(ds){ds.data=[];});
+    bChart.update('none');
+  }
+};
+
+function initChart(){
+  var ctx=document.getElementById('bondChart');
+  if(!ctx||typeof Chart==='undefined') return;
+  bChart=new Chart(ctx.getContext('2d'),{type:'line',
+    data:{labels:bLabels,datasets:[
+      {label:'סה"כ',data:bData,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,0.10)',
+       borderWidth:2,fill:true,tension:0.4,pointRadius:0},
+      {label:'נתיב 1 (WiFi)',data:bP1,borderColor:'#58a6ff',backgroundColor:'transparent',
+       borderWidth:1.5,fill:false,tension:0.4,pointRadius:0},
+      {label:'נתיב 2 (סלולר)',data:bP2,borderColor:'#e3b341',backgroundColor:'transparent',
+       borderWidth:1.5,fill:false,tension:0.4,pointRadius:0}
+    ]},
+    options:{responsive:true,animation:false,
+      scales:{x:{ticks:{color:'#8b949e',maxTicksLimit:6,font:{size:10}},grid:{color:'#21262d'}},
+              y:{min:0,suggestedMax:1,ticks:{color:'#8b949e',font:{size:10}},grid:{color:'#21262d'}}},
+      plugins:{legend:{display:true,labels:{color:'#8b949e',font:{size:11},boxWidth:18}}}}});
+}
+
+async function poll(){
+  try{
+    var r=await fetch('/bondstat/'); if(!r.ok) throw 0;
+    var d=await r.json();
+    var conns=d.srtConns||[], paths=d.paths||{}, peers=d.srtlaPeers||[], pr=d.peerRates||{};
+
+    /* -- unit list: live dot + rate for every channel -- */
+    for(var i=1;i<=N_CH;i++){
+      var ch='app'+i;
+      var row=document.getElementById('lu-'+ch); if(!row) continue;
+      var cn=conns.find(function(c){return c.path===ch&&c.state==='publish';});
+      var isLive=!!(paths[ch]&&paths[ch].ready);
+      row.classList.toggle('live', isLive);
+      var rt=document.getElementById('lu-rt-'+ch);
+      if(rt) rt.textContent=(cn&&isLive)?cn.mbps.toFixed(1)+' Mb':'';
+    }
+
+    /* -- selected channel details -- */
+    var conn=conns.find(function(c){return c.path===bCh&&c.state==='publish';});
+    var pinfo=paths[bCh];
+    var mbps=conn?conn.mbps:0, live=!!(pinfo&&pinfo.ready), pc=peers.length;
+
+    var dispPeers=peers.slice(), isDirect=false;
+    if(pc===0 && conn && conn.remote && conn.remote.indexOf('127.0.0.1')!==0){
+      dispPeers=[conn.remote.replace(/:\d+$/,'')]; isDirect=true;
+    }
+
+    var badge=document.getElementById('bondStatusBadge');
+    if(badge){badge.textContent=live?'● בשידור':'○ לא משדר';badge.style.color=live?'#3fb950':'#8b949e';}
+
+    var pcEl=document.getElementById('bPathCount'),plEl=document.getElementById('bPathLabel'),pcCard=document.getElementById('bcard-bond');
+    var shown=isDirect?1:pc;
+    if(pcEl){pcEl.textContent=live?shown:'—';pcEl.style.color=shown>=2?'#3fb950':shown===1?'#e3b341':'#c9d1d9';}
+    if(plEl)plEl.textContent=shown>=2?'בונדינג פעיל ✅':isDirect?'חיבור ישיר (ללא בונדינג)':shown===1?'נתיב אחד ⚠':'מחכה לשידור';
+    if(pcCard)pcCard.style.background=shown>=2?'#0d2818':shown===1?'#1c1a00':'#161b22';
+
+    var mEl=document.getElementById('bMbps'); if(mEl)mEl.textContent=live?mbps.toFixed(2):'—';
+
+    var r1=pr[dispPeers[0]]||0, r2=pr[dispPeers[1]]||0;
+    if(isDirect) r1=mbps;
+    var p1ip=document.getElementById('bP1ip'),p1st=document.getElementById('bP1st'),c1=document.getElementById('bcard-p1');
+    var p2ip=document.getElementById('bP2ip'),p2st=document.getElementById('bP2st'),c2=document.getElementById('bcard-p2');
+    if(p1ip)p1ip.textContent=dispPeers[0]||'—';
+    if(p1st){p1st.textContent=dispPeers[0]?'● '+r1.toFixed(2)+' Mbps':'לא מחובר';p1st.style.color=dispPeers[0]?(isDirect?'#e3b341':'#3fb950'):'#8b949e';}
+    if(c1)c1.style.background=dispPeers[0]?'#0d1e2e':'#161b22';
+    if(p2ip)p2ip.textContent=dispPeers[1]||'—';
+    if(p2st){p2st.textContent=dispPeers[1]?'● '+r2.toFixed(2)+' Mbps':'לא מחובר';p2st.style.color=dispPeers[1]?'#3fb950':'#8b949e';}
+    if(c2)c2.style.background=dispPeers[1]?'#1c1500':'#161b22';
+
+    /* -- chart: total + per-path -- */
+    var now=new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    bLabels.push(now); bData.push(mbps); bP1.push(r1); bP2.push(r2);
+    if(bLabels.length>60){bLabels.shift();bData.shift();bP1.shift();bP2.shift();}
+    if(mbps>bPeak)bPeak=mbps;
+    var pl=document.getElementById('bPeakLabel'); if(pl&&bPeak>0)pl.textContent='שיא: '+bPeak.toFixed(2)+' Mbps';
+    if(bChart){
+      bChart.data.labels=bLabels.slice();
+      bChart.data.datasets[0].data=bData.slice();
+      bChart.data.datasets[1].data=bP1.slice();
+      bChart.data.datasets[2].data=bP2.slice();
+      bChart.update('none');
+    }
+  }catch(e){
+    var badge=document.getElementById('bondStatusBadge');
+    if(badge){badge.textContent='⚠ שגיאה';badge.style.color='#ff7b72';}
+  }
+}
+
+window.startBondTab=function(){ if(!bChart)initChart(); if(!bTimer){ poll(); bTimer=setInterval(poll,1000); } };
+window.stopBondTab=function(){ if(bTimer){ clearInterval(bTimer); bTimer=null; } };
+
+buildList();
+setTimeout(function(){
+  var tab=document.getElementById('tab-bond'); if(!tab) return;
+  new MutationObserver(function(){
+    if(tab.style.display!=='none') window.startBondTab(); else window.stopBondTab();
+  }).observe(tab,{attributes:true,attributeFilter:['style']});
+},600);
+})();
+</script>
+
+<script>
+/* bondTabHook - wire data-mode=bond to #tab-bond */
+(function(){
+  function applyBondMode(mode){
+    var bt=document.getElementById('tab-bond');
+    var gr=document.getElementById('grid');
+    if(!bt) return;
+    if(mode==='bond'){
+      bt.style.display='block';
+      if(gr) gr.style.display='none';
+    } else {
+      bt.style.display='none';
+      if(gr) gr.style.display='';
+    }
+  }
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest && e.target.closest('[data-mode]');
+    if(!btn) return;
+    applyBondMode(btn.getAttribute('data-mode'));
+  },true);
+  /* restore last tab on load */
+  var m=localStorage.getItem('mode');
+  if(m==='bond') applyBondMode('bond');
+})();
 </script>
 </body>
 </html>
