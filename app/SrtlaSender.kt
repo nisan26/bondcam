@@ -36,6 +36,10 @@ class SrtlaSender(
     @Volatile private var localPeer: SocketAddress? = null
     @Volatile private var running = false
 
+    // Recent bytes sent per link (decayed in housekeeping) - used for
+    // LiveU-style balanced scheduling across all healthy links.
+    private val sentRecent = HashMap<SrtlaConnection, Long>()
+
     fun start() {
         running = true
         Thread({
@@ -125,6 +129,7 @@ class SrtlaSender(
                         if (conn.inFlight.size > 10000) conn.inFlight.clear()
                     }
                     conn.send(buf, len)
+                    sentRecent[conn] = (sentRecent[conn] ?: 0L) + len
                 }
             } catch (e: Exception) {
                 if (running) Log.w(TAG, "localLoop: ${e.message}")
@@ -132,12 +137,20 @@ class SrtlaSender(
         }
     }
 
+    /**
+     * Balanced scheduler (LiveU-style): pick the link that has sent the least
+     * relative to its capacity (window). Two healthy links with equal windows
+     * split the traffic ~50/50; when a link degrades (losses shrink its
+     * window) traffic automatically shifts to the stronger link. Unregistered
+     * or closed links are never picked.
+     */
     private fun selectConn(): SrtlaConnection? {
         var best: SrtlaConnection? = null
-        var bestScore = -1
+        var bestLoad = Double.MAX_VALUE
         for (c in conns.values) {
-            val s = c.score()
-            if (s > bestScore) { bestScore = s; best = c }
+            if (!c.registered || c.closed) continue
+            val load = (sentRecent[c] ?: 0L).toDouble() / c.window
+            if (load < bestLoad) { bestLoad = load; best = c }
         }
         return best
     }
@@ -285,6 +298,11 @@ class SrtlaSender(
                         }
                         c.window = minOf(c.window + 1, SrtlaProto.WINDOW_MAX)
                     }
+                    // Decay recent-bytes counters (~1s half-life at 200ms tick)
+                    for (k in sentRecent.keys.toList()) {
+                        sentRecent[k] = (sentRecent[k] ?: 0L) * 4 / 5
+                    }
+                    sentRecent.keys.retainAll(conns.values.toSet())
                 }
                 Thread.sleep(200)
             } catch (e: InterruptedException) {
@@ -299,9 +317,11 @@ class SrtlaSender(
     fun registeredCount(): Int = synchronized(lock) { conns.values.count { it.registered } }
 
     fun statusLine(): String = synchronized(lock) {
+        val total = conns.values.sumOf { sentRecent[it] ?: 0L }.coerceAtLeast(1L)
         conns.values.joinToString("  |  ") { c ->
             val st = if (c.registered) "פעיל" else "מתחבר"
-            "${c.name}: $st (win=${c.window / 1000}k, fly=${c.inFlight.size})"
+            val pct = (sentRecent[c] ?: 0L) * 100 / total
+            "${c.name}: $st $pct% (fly=${c.inFlight.size})"
         }
     }
 }
