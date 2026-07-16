@@ -198,6 +198,9 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             StreamService.start(this)
             cam.streamClient.setSocketType(SocketType.JAVA)
             cam.streamClient.setReTries(1000)
+            // 1s SRT recovery window + bigger retransmit cache for clean video
+            cam.streamClient.setLatency(1_000_000)
+            try { cam.streamClient.resizeCache(600) } catch (e: Exception) {}
             cam.startStream("srt://$host:$port?streamid=$streamId")
             return
         }
@@ -229,6 +232,10 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
                     srtStarted = true
                     cam.streamClient.setSocketType(SocketType.JAVA)
                     cam.streamClient.setReTries(1000)
+                    // Bonding protection layer: 2s SRT recovery window (lost
+                    // packets get retransmitted over any link) + big cache
+                    cam.streamClient.setLatency(2_000_000)
+                    try { cam.streamClient.resizeCache(1000) } catch (e: Exception) {}
                     cam.startStream("srt://127.0.0.1:$LOCAL_SRT_PORT?streamid=$streamId")
                     ui.post(statusTicker)
                 } else {
