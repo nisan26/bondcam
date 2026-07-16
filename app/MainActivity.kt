@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
     private lateinit var etHost: EditText
     private lateinit var etPort: EditText
     private lateinit var etBitrate: EditText
+    private lateinit var etLatency: EditText
     private lateinit var etStreamId: EditText
 
     private var camera: SrtCamera2? = null
@@ -78,6 +79,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         etHost = findViewById(R.id.etHost)
         etPort = findViewById(R.id.etPort)
         etBitrate = findViewById(R.id.etBitrate)
+        etLatency = findViewById(R.id.etLatency)
         etStreamId = findViewById(R.id.etStreamId)
 
         openGlView.holder.addCallback(this)
@@ -111,6 +113,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         uri.getQueryParameter("port")?.takeIf { it.isNotBlank() }?.let { etPort.setText(it) }
         uri.getQueryParameter("sid")?.takeIf { it.isNotBlank() }?.let { etStreamId.setText(it) }
         uri.getQueryParameter("bitrate")?.takeIf { it.isNotBlank() }?.let { etBitrate.setText(it) }
+        uri.getQueryParameter("latency")?.takeIf { it.isNotBlank() }?.let { etLatency.setText(it) }
         uri.getQueryParameter("name")?.takeIf { it.isNotBlank() }?.let { reporterName = it }
 
         savePrefs()
@@ -123,6 +126,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         etHost.setText(p.getString("host", "satview.ddns.net"))
         etPort.setText(p.getString("port", BONDING_PORT.toString()))
         etBitrate.setText(p.getString("bitrate", "3500"))
+        etLatency.setText(p.getString("latency", "2000"))
         etStreamId.setText(p.getString("sid", "publish:app1"))
         reporterName = p.getString("name", "") ?: ""
         showReporter()
@@ -133,6 +137,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             .putString("host", etHost.text.toString().trim())
             .putString("port", etPort.text.toString().trim())
             .putString("bitrate", etBitrate.text.toString().trim())
+            .putString("latency", etLatency.text.toString().trim())
             .putString("sid", etStreamId.text.toString().trim())
             .putString("name", reporterName)
             .apply()
@@ -177,6 +182,10 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         val port = etPort.text.toString().trim().toIntOrNull() ?: DIRECT_PORT
         val bitrateKbps = etBitrate.text.toString().trim().toIntOrNull() ?: 3500
         val streamId = etStreamId.text.toString().trim().ifEmpty { "publish:app1" }
+        // SRT recovery window (ms). Lower = less delay, less time to repair
+        // lost packets. 200..8000, default 2000.
+        val latencyMs = (etLatency.text.toString().trim().toIntOrNull() ?: 2000)
+            .coerceIn(200, 8000)
 
         // H265 (HEVC): ~40% better compression than H264 at the same quality
         try { cam.setVideoCodec(VideoCodec.H265) } catch (e: Exception) {}
@@ -198,8 +207,8 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             StreamService.start(this)
             cam.streamClient.setSocketType(SocketType.JAVA)
             cam.streamClient.setReTries(1000)
-            // 1s SRT recovery window + bigger retransmit cache for clean video
-            cam.streamClient.setLatency(1_000_000)
+            // SRT recovery window from the Delay field + bigger cache
+            cam.streamClient.setLatency(latencyMs * 1000)
             try { cam.streamClient.resizeCache(600) } catch (e: Exception) {}
             cam.startStream("srt://$host:$port?streamid=$streamId")
             return
@@ -232,9 +241,9 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
                     srtStarted = true
                     cam.streamClient.setSocketType(SocketType.JAVA)
                     cam.streamClient.setReTries(1000)
-                    // Bonding protection layer: 2s SRT recovery window (lost
-                    // packets get retransmitted over any link) + big cache
-                    cam.streamClient.setLatency(2_000_000)
+                    // Bonding protection layer: SRT recovery window from the
+                    // Delay field (lost packets get retransmitted) + big cache
+                    cam.streamClient.setLatency(latencyMs * 1000)
                     try { cam.streamClient.resizeCache(1000) } catch (e: Exception) {}
                     cam.startStream("srt://127.0.0.1:$LOCAL_SRT_PORT?streamid=$streamId")
                     ui.post(statusTicker)
@@ -263,6 +272,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         etHost.isEnabled = enabled
         etPort.isEnabled = enabled
         etBitrate.isEnabled = enabled
+        etLatency.isEnabled = enabled
         etStreamId.isEnabled = enabled
     }
 

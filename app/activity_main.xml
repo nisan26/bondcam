@@ -48,7 +48,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:hint="@string/server_port"
-                android:text="8890"
+                android:text="5001"
                 android:inputType="number"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#AAAAAA" />
@@ -60,6 +60,17 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/bitrate"
                 android:text="3500"
+                android:inputType="number"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA" />
+
+            <EditText
+                android:id="@+id/etLatency"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="Delay ms"
+                android:text="2000"
                 android:inputType="number"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#AAAAAA" />
