@@ -40,6 +40,11 @@ class SrtlaSender(
     // LiveU-style balanced scheduling across all healthy links.
     private val sentRecent = HashMap<SrtlaConnection, Long>()
 
+    // Recent loss events per link (decayed in housekeeping). A link with
+    // recent losses is "weak": it gets a small probe share instead of 50%,
+    // and returns to full balance automatically once losses stop.
+    private val lossRecent = HashMap<SrtlaConnection, Long>()
+
     fun start() {
         running = true
         Thread({
@@ -137,19 +142,22 @@ class SrtlaSender(
         }
     }
 
+    private fun isWeak(c: SrtlaConnection): Boolean = (lossRecent[c] ?: 0L) >= 5
+
     /**
-     * Balanced scheduler (LiveU-style): pick the link that has sent the least
-     * relative to its capacity (window). Two healthy links with equal windows
-     * split the traffic ~50/50; when a link degrades (losses shrink its
-     * window) traffic automatically shifts to the stronger link. Unregistered
-     * or closed links are never picked.
+     * Balanced scheduler (LiveU-style): all healthy links share the traffic
+     * equally (50/50 with two links) regardless of history. A link with
+     * recent packet loss becomes "weak" and drops to a ~10% probe share so
+     * we keep measuring it; once the losses stop it returns to full balance
+     * automatically. Unregistered or closed links are never picked.
      */
     private fun selectConn(): SrtlaConnection? {
         var best: SrtlaConnection? = null
         var bestLoad = Double.MAX_VALUE
         for (c in conns.values) {
             if (!c.registered || c.closed) continue
-            val load = (sentRecent[c] ?: 0L).toDouble() / c.window
+            val weight = if (isWeak(c)) 0.1 else 1.0
+            val load = (sentRecent[c] ?: 0L).toDouble() / weight
             if (load < bestLoad) { bestLoad = load; best = c }
         }
         return best
@@ -257,6 +265,7 @@ class SrtlaSender(
         for (c in conns.values) {
             if (c.inFlight.remove(seq)) {
                 c.window = maxOf(c.window - SrtlaProto.WINDOW_DECR, SrtlaProto.WINDOW_MIN)
+                lossRecent[c] = (lossRecent[c] ?: 0L) + 1
                 return
             }
         }
@@ -290,6 +299,7 @@ class SrtlaSender(
                             c.registered = false
                             c.inFlight.clear()
                             c.window = SrtlaProto.WINDOW_MIN * 2
+                            lossRecent[c] = 100
                             onStatus("קישור איטי/נפל: ${c.name}")
                         }
                         val id = groupId
@@ -303,6 +313,11 @@ class SrtlaSender(
                         sentRecent[k] = (sentRecent[k] ?: 0L) * 4 / 5
                     }
                     sentRecent.keys.retainAll(conns.values.toSet())
+                    // Decay loss counters (~3s to recover from a loss burst)
+                    for (k in lossRecent.keys.toList()) {
+                        lossRecent[k] = (lossRecent[k] ?: 0L) * 9 / 10
+                    }
+                    lossRecent.keys.retainAll(conns.values.toSet())
                 }
                 Thread.sleep(200)
             } catch (e: InterruptedException) {
@@ -319,9 +334,13 @@ class SrtlaSender(
     fun statusLine(): String = synchronized(lock) {
         val total = conns.values.sumOf { sentRecent[it] ?: 0L }.coerceAtLeast(1L)
         conns.values.joinToString("  |  ") { c ->
-            val st = if (c.registered) "פעיל" else "מתחבר"
+            val st = when {
+                !c.registered -> "מתחבר"
+                isWeak(c) -> "חלש"
+                else -> "פעיל"
+            }
             val pct = (sentRecent[c] ?: 0L) * 100 / total
-            "${c.name}: $st $pct% (fly=${c.inFlight.size})"
+            "${c.name}: $st $pct%"
         }
     }
 }
