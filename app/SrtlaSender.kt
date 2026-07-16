@@ -142,7 +142,17 @@ class SrtlaSender(
         }
     }
 
-    private fun isWeak(c: SrtlaConnection): Boolean = (lossRecent[c] ?: 0L) >= 5
+    /**
+     * A link is "weak" only on hard evidence:
+     *  - it timed out / stopped answering (lossRecent set to 100 on timeout), or
+     *  - a large backlog of packets it carried were never confirmed by the
+     *    SRTLA receiver (the link itself is stalling).
+     * SRT NAKs are deliberately NOT counted here: with two paths of different
+     * latency the receiver reports the slower path's in-flight packets as
+     * "lost" (reorder), which would wrongly demote a perfectly good link.
+     */
+    private fun isWeak(c: SrtlaConnection): Boolean =
+        (lossRecent[c] ?: 0L) >= 5 || c.inFlight.size > 400
 
     /**
      * Balanced scheduler (LiveU-style): all healthy links share the traffic
@@ -265,7 +275,8 @@ class SrtlaSender(
         for (c in conns.values) {
             if (c.inFlight.remove(seq)) {
                 c.window = maxOf(c.window - SrtlaProto.WINDOW_DECR, SrtlaProto.WINDOW_MIN)
-                lossRecent[c] = (lossRecent[c] ?: 0L) + 1
+                // Note: intentionally NOT counted toward isWeak() - SRT NAKs
+                // include reorder false-positives across paths.
                 return
             }
         }
