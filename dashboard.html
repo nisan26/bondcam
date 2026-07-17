@@ -122,7 +122,7 @@
 <header>
   <div class="brand">
     <div class="t1">מערכת בונדינג לשידור חי מנייד · שילוב WIFI וסלולר</div>
-    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b></div>
+    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b> · <span style="color:#3fb950;">v2.2</span></div>
   </div>
   <div class="tabs" id="tabs">
     <button data-mode="cam" class="on">🔗 לינקים</button>
@@ -630,6 +630,11 @@ buildTabs(); buildLayoutButtons(); render(); poll(); setInterval(poll,2000);
           <div class="ip" id="bP2ip">—</div>
           <div class="s" id="bP2st">לא מחובר</div>
         </div>
+        <div class="lu-card" id="bcard-sys">
+          <div class="k">&#128421; שרת</div>
+          <div class="v" id="bSysCpu" style="font-size:28px;">—</div>
+          <div class="s" id="bSysInfo">CPU</div>
+        </div>
       </div>
 
       <div class="lu-panel">
@@ -751,6 +756,15 @@ async function poll(){
     if(pcCard)pcCard.style.background=shown>=2?'#0d2818':shown===1?'#1c1a00':'#161b22';
 
     var mEl=document.getElementById('bMbps'); if(mEl)mEl.textContent=live?mbps.toFixed(2):'—';
+
+    /* -- server CPU / memory -- */
+    var sys=d.sys||{};
+    var cEl=document.getElementById('bSysCpu'), iEl=document.getElementById('bSysInfo');
+    if(cEl&&sys.cpu!==undefined){
+      cEl.textContent=sys.cpu+'%';
+      cEl.style.color=sys.cpu<60?'#3fb950':sys.cpu<85?'#e3b341':'#ff7b72';
+    }
+    if(iEl&&sys.mem!==undefined) iEl.textContent='CPU · זיכרון '+sys.mem+'% · Load '+(sys.load||0);
 
     var r1=live?(pr[dispPeers[0]]||0):0, r2=live?(pr[dispPeers[1]]||0):0;
     if(isDirect) r1=mbps;
