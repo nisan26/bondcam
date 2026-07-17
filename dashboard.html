@@ -24,24 +24,23 @@
   .cell { background:#000; border:1px solid #222; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; position:relative; min-height:0; }
   .stage { position:relative; flex:1 1 auto; min-height:0; display:flex; }
   .stage video { flex:1 1 auto; width:100%; height:100%; object-fit:contain; background:#000; min-width:0; }
-  /* no-signal: SMPTE colour bars + SATVIEW caption */
-  .ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-        text-align:center; overflow:hidden;
-        background:linear-gradient(to right,
-          #c0c0c0 0%, #c0c0c0 14.28%, #c0c000 14.28%, #c0c000 28.57%,
-          #00c0c0 28.57%, #00c0c0 42.85%, #00c000 42.85%, #00c000 57.14%,
-          #c000c0 57.14%, #c000c0 71.42%, #c00000 71.42%, #c00000 85.71%,
-          #0000c0 85.71%, #0000c0 100%); }
-  .ph::after { content:''; position:absolute; left:0; right:0; bottom:0; height:22%;
-        background:linear-gradient(to right,
-          #0000c0 0%, #0000c0 14.28%, #131313 14.28%, #131313 28.57%,
-          #c000c0 28.57%, #c000c0 42.85%, #131313 42.85%, #131313 57.14%,
-          #00c0c0 57.14%, #00c0c0 71.42%, #131313 71.42%, #131313 85.71%,
-          #c0c0c0 85.71%, #c0c0c0 100%); }
-  .ph .cap { position:relative; z-index:2; background:#000000cc; color:#fff; font-weight:bold;
-             letter-spacing:2px; padding:8px 18px; border-radius:8px; border:1px solid #ffffff40;
-             font-size:clamp(12px, 2.2vw, 26px); text-shadow:0 2px 6px #000; }
-  .ph .cap small { display:block; font-size:11px; font-weight:normal; letter-spacing:0; color:#c9d1d9; margin-top:3px; }
+  /* no-signal: SATVIEW.TV screensaver - logo drifting top to bottom */
+  .ph { position:absolute; inset:0; overflow:hidden; text-align:center;
+        background:radial-gradient(ellipse at 50% 25%, #0d1726 0%, #05070a 72%); }
+  .ph .drift { position:absolute; left:0; right:0; top:8%;
+               display:flex; flex-direction:column; align-items:center; gap:6px;
+               animation:phDrift 11s ease-in-out infinite; }
+  @keyframes phDrift {
+    0%,100% { top:8%; }
+    50%     { top:64%; }
+  }
+  .ph .logo { font-weight:900; letter-spacing:3px; line-height:1;
+              font-size:clamp(15px, 2.8vw, 32px); direction:ltr;
+              background:linear-gradient(90deg, #58a6ff 0%, #7ee787 100%);
+              -webkit-background-clip:text; background-clip:text; color:transparent;
+              filter:drop-shadow(0 0 16px #1f6feb66); }
+  .ph .logo .dish { font-size:.8em; -webkit-text-fill-color:initial; color:#58a6ff; margin-inline-end:6px; }
+  .ph .capn { font-size:clamp(10px, 1.1vw, 13px); color:#8b949e; letter-spacing:1px; }
   .slot { position:absolute; top:6px; left:8px; background:#000a; color:#c9d1d9; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
   .live { position:absolute; top:6px; right:46px; background:#000a; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; z-index:2; }
   .live.on { color:#3fb950; } .live.off { color:#6e7681; }
@@ -424,7 +423,9 @@ function render(){
       const ph=document.createElement('div'); ph.className='ph';
       const rep  = (mode==='app') ? (localStorage.getItem('rep'+i) || '') : '';
       const hint = (mode==='app') ? (rep ? 'ממתין לשידור' : 'שלח לינק הגדרה לכתב') : 'שלח לינק למרואיין';
-      ph.innerHTML = '<div class="cap">' + (rep || ('SATVIEW ' + i)) + '<small>' + hint + '</small></div>';
+      ph.innerHTML = '<div class="drift">' +
+        '<div class="logo"><span class="dish">📡</span>SATVIEW.TV</div>' +
+        '<div class="capn">' + (rep || ('מסך ' + i)) + ' · ' + hint + '</div></div>';
       stage.appendChild(ph);
     }
     const sl=document.createElement('div'); sl.className='slot'; sl.textContent='#'+i+' · '+cam.toUpperCase();
