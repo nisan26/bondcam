@@ -273,6 +273,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
     }
 
     private fun stopAll() {
+        streaming = false          // set first so auto-reconnect callbacks stand down
         ui.removeCallbacks(statusTicker)
         try { camera?.stopStream() } catch (e: Exception) {}
         networks?.stop(); networks = null
@@ -337,7 +338,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
 
     override fun onConnectionFailed(reason: String) {
         runOnUiThread { tvStatus.text = "שגיאת חיבור: $reason" }
-        camera?.streamClient?.reTry(3000, reason, null)
+        if (streaming) camera?.streamClient?.reTry(3000, reason, null)
     }
 
     override fun onNewBitrate(bitrate: Long) {
@@ -348,6 +349,10 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
 
     override fun onDisconnect() {
         runOnUiThread { tvStatus.text = "SRT מנותק" }
+        // Auto-reconnect on unexpected disconnect (not user-initiated stop)
+        if (streaming && srtStarted) {
+            camera?.streamClient?.reTry(2000, "disconnected", null)
+        }
     }
 
     override fun onAuthError() {}
