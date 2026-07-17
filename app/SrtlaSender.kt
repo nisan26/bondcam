@@ -127,29 +127,7 @@ class SrtlaSender(
                 sock.receive(pkt)
                 localPeer = pkt.socketAddress
                 val len = pkt.length
-                val isControl = len >= 2 && (buf[0].toInt() and 0x80) != 0
-                // SRT control type (0x0000 = handshake). Handshakes must NOT
-                // be duplicated - a doubled handshake confuses the server.
-                val ctrlType = if (isControl) ((buf[0].toInt() and 0x7F) shl 8) or (buf[1].toInt() and 0xFF) else -1
-                val isHandshake = isControl && ctrlType == 0x0000
-                // SRT data header: R (retransmit) flag = bit 2 of byte 4
-                val isRetx = !isControl && len >= 8 && (buf[4].toInt() and 0x04) != 0
                 synchronized(lock) {
-                    if (isControl && !isHandshake) {
-                        // Critical SRT control (acks/keepalive/nak):
-                        // duplicate on ALL healthy links - never lose these.
-                        var sent = false
-                        for (c in conns.values) {
-                            if (c.registered && !c.closed) { c.send(buf, len); sent = true }
-                        }
-                        if (!sent) selectConn()?.send(buf, len)
-                        return@synchronized
-                    }
-                    if (isHandshake) {
-                        // Single path only, on the healthiest link.
-                        selectConn()?.send(buf, len)
-                        return@synchronized
-                    }
                     val conn = selectConn() ?: return@synchronized
                     if (SrtlaProto.isSrtData(buf, len)) {
                         conn.inFlight.add(SrtlaProto.dataSeq(buf))
@@ -157,29 +135,11 @@ class SrtlaSender(
                     }
                     conn.send(buf, len)
                     sentRecent[conn] = (sentRecent[conn] ?: 0L) + len
-                    // LiveU-style protection: retransmitted packets, and any
-                    // packet probing a weak link, are duplicated on the best
-                    // other link so recovery never depends on a shaky path.
-                    if (isRetx || isWeak(conn)) {
-                        bestOther(conn)?.send(buf, len)
-                    }
                 }
             } catch (e: Exception) {
                 if (running) Log.w(TAG, "localLoop: ${e.message}")
             }
         }
-    }
-
-    /** Best registered link other than [not] - prefers healthy links. */
-    private fun bestOther(not: SrtlaConnection): SrtlaConnection? {
-        var best: SrtlaConnection? = null
-        var bestLoad = Double.MAX_VALUE
-        for (c in conns.values) {
-            if (c === not || !c.registered || c.closed) continue
-            val load = (sentRecent[c] ?: 0L).toDouble() / linkWeight(c)
-            if (load < bestLoad) { bestLoad = load; best = c }
-        }
-        return best
     }
 
     /**
@@ -201,22 +161,13 @@ class SrtlaSender(
      * we keep measuring it; once the losses stop it returns to full balance
      * automatically. Unregistered or closed links are never picked.
      */
-    /**
-     * Link weight: 1.0 for a healthy free-flowing link, smoothly reduced as
-     * its unconfirmed backlog grows (graceful preference for the stronger
-     * network), and 0.1 for a hard-failed link (probe share).
-     */
-    private fun linkWeight(c: SrtlaConnection): Double {
-        val base = if (isWeak(c)) 0.1 else 1.0
-        return base / (1.0 + c.inFlight.size / 150.0)
-    }
-
     private fun selectConn(): SrtlaConnection? {
         var best: SrtlaConnection? = null
         var bestLoad = Double.MAX_VALUE
         for (c in conns.values) {
             if (!c.registered || c.closed) continue
-            val load = (sentRecent[c] ?: 0L).toDouble() / linkWeight(c)
+            val weight = if (isWeak(c)) 0.1 else 1.0
+            val load = (sentRecent[c] ?: 0L).toDouble() / weight
             if (load < bestLoad) { bestLoad = load; best = c }
         }
         return best
@@ -354,11 +305,6 @@ class SrtlaSender(
                         if (now - c.lastKeepaliveMs > SrtlaProto.KEEPALIVE_INTERVAL_MS) {
                             c.lastKeepaliveMs = now
                             c.send(keepalive, keepalive.size)
-                        }
-                        // Fast failover: a link silent for >1.5s is demoted to
-                        // weak immediately (probe share + duplication cover it)
-                        if (c.registered && now - c.lastReceivedMs > 1500) {
-                            lossRecent[c] = maxOf(lossRecent[c] ?: 0L, 6L)
                         }
                         if (c.registered && now - c.lastReceivedMs > SrtlaProto.CONN_TIMEOUT_MS) {
                             c.registered = false
