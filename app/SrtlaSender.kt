@@ -176,8 +176,7 @@ class SrtlaSender(
         var bestLoad = Double.MAX_VALUE
         for (c in conns.values) {
             if (c === not || !c.registered || c.closed) continue
-            val weight = if (isWeak(c)) 0.1 else 1.0
-            val load = (sentRecent[c] ?: 0L).toDouble() / weight
+            val load = (sentRecent[c] ?: 0L).toDouble() / linkWeight(c)
             if (load < bestLoad) { bestLoad = load; best = c }
         }
         return best
@@ -202,13 +201,22 @@ class SrtlaSender(
      * we keep measuring it; once the losses stop it returns to full balance
      * automatically. Unregistered or closed links are never picked.
      */
+    /**
+     * Link weight: 1.0 for a healthy free-flowing link, smoothly reduced as
+     * its unconfirmed backlog grows (graceful preference for the stronger
+     * network), and 0.1 for a hard-failed link (probe share).
+     */
+    private fun linkWeight(c: SrtlaConnection): Double {
+        val base = if (isWeak(c)) 0.1 else 1.0
+        return base / (1.0 + c.inFlight.size / 150.0)
+    }
+
     private fun selectConn(): SrtlaConnection? {
         var best: SrtlaConnection? = null
         var bestLoad = Double.MAX_VALUE
         for (c in conns.values) {
             if (!c.registered || c.closed) continue
-            val weight = if (isWeak(c)) 0.1 else 1.0
-            val load = (sentRecent[c] ?: 0L).toDouble() / weight
+            val load = (sentRecent[c] ?: 0L).toDouble() / linkWeight(c)
             if (load < bestLoad) { bestLoad = load; best = c }
         }
         return best
