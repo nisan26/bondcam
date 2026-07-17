@@ -128,17 +128,26 @@ class SrtlaSender(
                 localPeer = pkt.socketAddress
                 val len = pkt.length
                 val isControl = len >= 2 && (buf[0].toInt() and 0x80) != 0
+                // SRT control type (0x0000 = handshake). Handshakes must NOT
+                // be duplicated - a doubled handshake confuses the server.
+                val ctrlType = if (isControl) ((buf[0].toInt() and 0x7F) shl 8) or (buf[1].toInt() and 0xFF) else -1
+                val isHandshake = isControl && ctrlType == 0x0000
                 // SRT data header: R (retransmit) flag = bit 2 of byte 4
                 val isRetx = !isControl && len >= 8 && (buf[4].toInt() and 0x04) != 0
                 synchronized(lock) {
-                    if (isControl) {
-                        // Critical SRT control (handshake/acks/keepalive):
+                    if (isControl && !isHandshake) {
+                        // Critical SRT control (acks/keepalive/nak):
                         // duplicate on ALL healthy links - never lose these.
                         var sent = false
                         for (c in conns.values) {
                             if (c.registered && !c.closed) { c.send(buf, len); sent = true }
                         }
                         if (!sent) selectConn()?.send(buf, len)
+                        return@synchronized
+                    }
+                    if (isHandshake) {
+                        // Single path only, on the healthiest link.
+                        selectConn()?.send(buf, len)
                         return@synchronized
                     }
                     val conn = selectConn() ?: return@synchronized
