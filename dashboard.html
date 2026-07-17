@@ -732,10 +732,12 @@ async function poll(){
     /* -- selected channel details -- */
     var conn=conns.find(function(c){return c.path===bCh&&c.state==='publish';});
     var pinfo=paths[bCh];
-    var mbps=conn?conn.mbps:0, live=!!(pinfo&&pinfo.ready), pc=peers.length;
+    var mbps=conn?conn.mbps:0, live=!!(pinfo&&pinfo.ready);
 
-    var dispPeers=peers.slice(), isDirect=false;
-    if(pc===0 && conn && conn.remote && conn.remote.indexOf('127.0.0.1')!==0){
+    /* Per-channel separation: path data is shown ONLY when the selected
+       channel is actually publishing - idle channels show nothing. */
+    var dispPeers=live?peers.slice():[], isDirect=false, pc=dispPeers.length;
+    if(live && pc===0 && conn && conn.remote && conn.remote.indexOf('127.0.0.1')!==0){
       dispPeers=[conn.remote.replace(/:\d+$/,'')]; isDirect=true;
     }
 
@@ -750,7 +752,7 @@ async function poll(){
 
     var mEl=document.getElementById('bMbps'); if(mEl)mEl.textContent=live?mbps.toFixed(2):'—';
 
-    var r1=pr[dispPeers[0]]||0, r2=pr[dispPeers[1]]||0;
+    var r1=live?(pr[dispPeers[0]]||0):0, r2=live?(pr[dispPeers[1]]||0):0;
     if(isDirect) r1=mbps;
     var p1ip=document.getElementById('bP1ip'),p1st=document.getElementById('bP1st'),c1=document.getElementById('bcard-p1');
     var p2ip=document.getElementById('bP2ip'),p2st=document.getElementById('bP2st'),c2=document.getElementById('bcard-p2');
