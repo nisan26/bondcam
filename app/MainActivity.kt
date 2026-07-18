@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.telephony.TelephonyManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -60,6 +62,37 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         }
     }
 
+    // Live signal-strength bars for both networks, shown in the header line.
+    private val signalTicker = object : Runnable {
+        override fun run() {
+            tvReporter.text = reporterLine() + "   " + signalBars()
+            ui.postDelayed(this, 2000)
+        }
+    }
+
+    /** 0-4 bars per network: WiFi from RSSI, cellular from TelephonyManager. */
+    private fun signalBars(): String {
+        fun draw(level: Int): String {
+            val b = StringBuilder()
+            for (i in 0..3) b.append(if (level > i) '▮' else '▯')
+            return b.toString()
+        }
+        var wifi = -1
+        try {
+            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val rssi = wm.connectionInfo?.rssi ?: -127
+            if (rssi > -126) wifi = WifiManager.calculateSignalLevel(rssi, 5)
+        } catch (e: Exception) {}
+        var cell = -1
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                cell = tm.signalStrength?.level ?: -1
+            }
+        } catch (e: Exception) {}
+        return "📶" + draw(wifi) + " 📡" + draw(cell)
+    }
+
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
             val cam = grants[Manifest.permission.CAMERA] ?: false
@@ -90,6 +123,8 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
 
         if (hasPermissions()) initCamera()
         else permissionLauncher.launch(neededPermissions())
+
+        ui.post(signalTicker)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -143,14 +178,18 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             .apply()
     }
 
-    private fun showReporter() {
+    private fun reporterLine(): String {
         val slot = etStreamId.text.toString().substringAfter(':', "").uppercase()
-        tvReporter.text = when {
+        return when {
             reporterName.isNotBlank() && slot.isNotBlank() -> "כתב: $reporterName · $slot"
             reporterName.isNotBlank() -> "כתב: $reporterName"
             slot.isNotBlank() -> "משבצת: $slot"
             else -> "לא הוגדר · פתח את לינק ההגדרה"
         }
+    }
+
+    private fun showReporter() {
+        tvReporter.text = reporterLine() + "   " + signalBars()
     }
 
     /* ---------- permissions / camera ---------- */
@@ -302,6 +341,7 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
 
     override fun onDestroy() {
         super.onDestroy()
+        ui.removeCallbacks(signalTicker)
         if (streaming) stopAll()
     }
 
