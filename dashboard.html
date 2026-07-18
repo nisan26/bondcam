@@ -88,9 +88,11 @@
   .lu-unit .dot { width:9px; height:9px; border-radius:50%; background:#30363d; flex:0 0 auto; }
   .lu-unit.live .dot { background:#3fb950; box-shadow:0 0 6px #3fb95088; }
   .lu-unit .nm { flex:1; min-width:0; }
-  .lu-unit .nm .a { font-size:13px; font-weight:bold; color:#c9d1d9; }
+  .lu-unit .nm .a { font-size:13px; font-weight:bold; color:#c9d1d9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
   .lu-unit .nm .b { font-size:10px; color:#6e7681; direction:ltr; text-align:right; }
   .lu-unit .rt { font-size:11px; color:#3fb950; direction:ltr; white-space:nowrap; }
+  .lu-unit .ed { background:none; border:0; color:#3d444d; cursor:pointer; font-size:13px; padding:2px 4px; flex:0 0 auto; }
+  .lu-unit:hover .ed { color:#58a6ff; }
   .lu-main { flex:1 1 auto; min-width:0; overflow-y:auto; padding:14px 18px; background:#07090d; }
   .lu-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
   .lu-head .ttl { font-size:20px; font-weight:bold; color:#fff; }
@@ -122,7 +124,7 @@
 <header>
   <div class="brand">
     <div class="t1">מערכת בונדינג לשידור חי מנייד · שילוב WIFI וסלולר</div>
-    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b> · <span style="color:#3fb950;">v2.2</span></div>
+    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b> · <span style="color:#3fb950;">v2.3</span></div>
   </div>
   <div class="tabs" id="tabs">
     <button data-mode="cam" class="on">🔗 לינקים</button>
@@ -666,6 +668,26 @@ var N_CH=16, bCh='app1', bChart=null, bTimer=null;
 var bLabels=[], bData=[], bP1=[], bP2=[], bPeak=0;
 
 /* ---- unit list (16 channels, LiveU style) ---- */
+function repName(i){ return localStorage.getItem('rep'+i) || ''; }
+
+function editName(i, ev){
+  if(ev) ev.stopPropagation();
+  var v=prompt('שם הכתב למשבצת APP '+i+':', repName(i));
+  if(v===null) return;
+  v=v.trim();
+  if(v) localStorage.setItem('rep'+i, v); else localStorage.removeItem('rep'+i);
+  var el=document.getElementById('lu-nm-app'+i);
+  if(el) el.textContent = v || ('APP '+i);
+  if(bCh==='app'+i) refreshTitle();
+}
+
+function refreshTitle(){
+  var n=bCh.replace('app','');
+  var nm=repName(n);
+  document.getElementById('luTitle').textContent = nm || ('APP '+n);
+  document.getElementById('luSub').textContent = 'APP '+n+' · publish:'+bCh;
+}
+
 function buildList(){
   var box=document.getElementById('luList');
   for(var i=1;i<=N_CH;i++){
@@ -673,10 +695,13 @@ function buildList(){
       var row=document.createElement('div');
       row.className='lu-unit'+(('app'+i)===bCh?' sel':'');
       row.id='lu-app'+i;
+      var nm=repName(i);
       row.innerHTML='<span class="dot"></span>'+
-        '<span class="nm"><span class="a">APP '+i+'</span>'+
-        '<div class="b">publish:app'+i+'</div></span>'+
-        '<span class="rt" id="lu-rt-app'+i+'"></span>';
+        '<span class="nm"><span class="a" id="lu-nm-app'+i+'">'+(nm||('APP '+i))+'</span>'+
+        '<div class="b">APP '+i+' · publish:app'+i+'</div></span>'+
+        '<span class="rt" id="lu-rt-app'+i+'"></span>'+
+        '<button class="ed" title="ערוך שם כתב">&#9998;</button>';
+      row.querySelector('.ed').onclick=function(ev){ editName(i, ev); };
       row.onclick=function(){ selectBondCh('app'+i); };
       box.appendChild(row);
     })(i);
@@ -687,9 +712,7 @@ window.selectBondCh=function(ch){
   bCh=ch;
   document.querySelectorAll('.lu-unit').forEach(function(r){r.classList.remove('sel');});
   var row=document.getElementById('lu-'+ch); if(row) row.classList.add('sel');
-  var n=ch.replace('app','');
-  document.getElementById('luTitle').textContent='APP '+n;
-  document.getElementById('luSub').textContent='publish:'+ch;
+  refreshTitle();
   bLabels=[];bData=[];bP1=[];bP2=[];bPeak=0;
   var pl=document.getElementById('bPeakLabel'); if(pl) pl.textContent='';
   if(bChart){
