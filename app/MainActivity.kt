@@ -23,6 +23,7 @@ import com.pedro.common.ConnectChecker
 import com.pedro.common.VideoCodec
 import com.pedro.common.socket.base.SocketType
 import com.pedro.library.srt.SrtCamera2
+import com.pedro.library.util.BitrateAdapter
 import com.pedro.library.view.OpenGlView
 import com.satview.bondcam.srtla.BondingNetworks
 import com.satview.bondcam.srtla.SrtlaSender
@@ -54,10 +55,18 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
 
     private var reporterName = ""
 
+    // Adaptive bitrate: when the network can't sustain the target bitrate,
+    // reduce quality smoothly instead of freezing; climb back on recovery.
+    private var bitrateAdapter: BitrateAdapter? = null
+    @Volatile private var currentKbps = 0
+
     private val ui = Handler(Looper.getMainLooper())
     private val statusTicker = object : Runnable {
         override fun run() {
-            sender?.let { tvStatus.text = it.statusLine() }
+            sender?.let {
+                val rate = if (currentKbps > 0) "  |  ▲${currentKbps}k" else ""
+                tvStatus.text = it.statusLine() + rate
+            }
             ui.postDelayed(this, 1000)
         }
     }
@@ -236,6 +245,14 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
             return
         }
 
+        // Adaptive bitrate: on congestion drop ~20%, otherwise climb back
+        // toward the target. Video quality dips instead of freezing.
+        currentKbps = bitrateKbps
+        bitrateAdapter = BitrateAdapter { br ->
+            currentKbps = br / 1000
+            try { cam.setVideoBitrateOnFly(br) } catch (e: Exception) {}
+        }.apply { setMaxBitrate(bitrateKbps * 1000) }
+
         // DIRECT mode: RootEncoder straight to MediaMTX (no bonding). Default.
         if (port == DIRECT_PORT) {
             streaming = true
@@ -299,6 +316,8 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         try { camera?.stopStream() } catch (e: Exception) {}
         networks?.stop(); networks = null
         sender?.stop(); sender = null
+        bitrateAdapter = null
+        currentKbps = 0
         streaming = false
         srtStarted = false
         StreamService.stop(this)
@@ -361,7 +380,11 @@ class MainActivity : AppCompatActivity(), ConnectChecker, SurfaceHolder.Callback
         camera?.streamClient?.reTry(3000, reason, null)
     }
 
-    override fun onNewBitrate(bitrate: Long) {}
+    override fun onNewBitrate(bitrate: Long) {
+        val cam = camera ?: return
+        val congestion = try { cam.streamClient.hasCongestion() } catch (e: Exception) { false }
+        bitrateAdapter?.adaptBitrate(bitrate, congestion)
+    }
 
     override fun onDisconnect() {
         runOnUiThread { tvStatus.text = "SRT מנותק" }
