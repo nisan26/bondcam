@@ -15,9 +15,8 @@ case "$CAM" in
   *)    BASE=9000 ;;
 esac
 PORT=$((BASE + N))
-# SRT read/write against MediaMTX (loopback)
+# SRT read against MediaMTX (loopback)
 SRC="srt://127.0.0.1:8890?streamid=read:${CAM}"
-PREV="srt://127.0.0.1:8890?streamid=publish:${CAM}_prev"
 
 # rotation hint sent by the guest page:  /camN/whip?rot=90
 ROT=$(printf '%s' "$QUERY" | sed -n 's/.*rot=\([0-9]\{1,3\}\).*/\1/p')
@@ -31,15 +30,19 @@ esac
 sleep 1
 GST=/usr/bin/gst-launch-1.0
 
-# --- control-room preview: 720p H264 + Opus -> <cam>_prev (SRT publish)
-$GST -q uridecodebin uri="$SRC" name=d \
-  d. ! queue ! videoconvert ! $FLIP videoscale \
-     ! "video/x-raw,width=1280,height=720" \
-     ! x264enc tune=zerolatency speed-preset=ultrafast bitrate=2500 key-int-max=60 \
-     ! h264parse ! mux. \
-  d. ! queue ! audioconvert ! audioresample ! opusenc bitrate=96000 ! mux. \
-  mpegtsmux name=mux ! queue ! srtsink uri="$PREV" \
-  >/dev/null 2>&1 &
+# --- control-room preview: 720p H264 + Opus -> <cam>_prev
+# (Opus is required by the browser multiview; delivered on loopback only.
+#  Auto-restarts if it ever dies.)
+( while :; do
+    $GST -q uridecodebin uri="$SRC" name=d \
+      d. ! queue ! videoconvert ! $FLIP videoscale \
+         ! "video/x-raw,width=1280,height=720" \
+         ! x264enc tune=zerolatency speed-preset=ultrafast bitrate=2500 key-int-max=60 \
+         ! h264parse ! s. \
+      d. ! queue ! audioconvert ! audioresample ! opusenc bitrate=96000 ! s. \
+      rtspclientsink name=s location="rtsp://127.0.0.1:8554/${CAM}_prev" protocols=tcp
+    sleep 2
+  done ) >/dev/null 2>&1 &
 
 # --- SRT out (multi-client listener)
 case "$CAM" in
