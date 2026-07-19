@@ -124,7 +124,7 @@
 <header>
   <div class="brand">
     <div class="t1">מערכת בונדינג לשידור חי מנייד · שילוב WIFI וסלולר</div>
-    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b> · <span style="color:#3fb950;">v2.3</span></div>
+    <div class="t2">חדר בקרה · <b>SATVIEW.TV</b> · <span style="color:#3fb950;">v2.4</span></div>
   </div>
   <div class="tabs" id="tabs">
     <button data-mode="cam" class="on">🔗 לינקים</button>
@@ -132,6 +132,8 @@
     <button data-mode="bond">📡 בונדינג</button>
   </div>
   <div class="layouts" id="layouts"></div>
+  <button id="recBtn" title="הפעלה/כיבוי הקלטה לכל הערוצים"
+          style="background:#21262d;border:1px solid #2a2f3a;color:#8b949e;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:bold;cursor:pointer;">⏺ הקלטה</button>
   <span class="count" id="count">0 חי</span>
   <a href="/app/" target="_blank">⬇ הורדות</a>
   <a href="/recordings/" target="_blank">הקלטות ▸</a>
@@ -595,6 +597,32 @@ async function poll(){
   }catch(e){ countEl.textContent='שגיאת חיבור'; }
 }
 buildTabs(); buildLayoutButtons(); render(); poll(); setInterval(poll,2000);
+
+/* ---------- recording on/off toggle (MediaMTX pathDefaults.record) ---------- */
+const recBtn=document.getElementById('recBtn');
+function paintRec(on){
+  recBtn.dataset.on = on ? '1' : '';
+  recBtn.textContent = on ? '⏺ הקלטה פעילה' : '⏺ הקלטה כבויה';
+  recBtn.style.background = on ? '#da3633' : '#21262d';
+  recBtn.style.color = on ? '#fff' : '#8b949e';
+  recBtn.style.borderColor = on ? '#da3633' : '#2a2f3a';
+}
+async function refreshRec(){
+  try{
+    const c = await fetch('/api/v3/config/pathdefaults/get').then(r=>r.json());
+    paintRec(!!c.record);
+  }catch(e){}
+}
+recBtn.onclick = async () => {
+  const on = recBtn.dataset.on === '1';
+  const body = JSON.stringify({ record: !on });
+  const url = '/api/v3/config/pathdefaults/patch';
+  let ok = false;
+  try{ ok = (await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body})).ok; }catch(e){}
+  if(!ok){ try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body}); }catch(e){} }
+  setTimeout(refreshRec, 500);
+};
+refreshRec();
 </script>
 
 <!-- ================= LiveU-style bonding monitor ================= -->
