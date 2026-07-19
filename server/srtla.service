@@ -1,0 +1,13 @@
+[Unit]
+Description=SRTLA Receiver - IRL Pro Bonding
+After=network.target mediamtx.service
+Wants=mediamtx.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/srtla_rec 5001 127.0.0.1 8890
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

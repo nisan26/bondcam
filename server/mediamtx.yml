@@ -1,0 +1,57 @@
+# MediaMTX - BondCam server (multi-camera, recording, playback, API)
+logLevel: info
+
+# --- Management API (used by the admin dashboard) ---
+api: yes
+apiAddress: 127.0.0.1:9997
+
+# --- Playback server for recordings (DVR) ---
+playback: yes
+playbackAddress: 127.0.0.1:9996
+
+# --- Metrics (optional) ---
+metrics: no
+
+# --- SRT: phones publish here (streamid publish:<camN>), viewers read:<camN> ---
+srt: yes
+srtAddress: :8890
+
+# --- HLS: browser viewing (proxied by nginx for the dashboard) ---
+hls: yes
+hlsAddress: 127.0.0.1:8888
+hlsAlwaysRemux: no
+hlsSegmentDuration: 1s
+hlsSegmentCount: 7
+
+# WebRTC: low-latency browser playback (control room), smooth like VLC
+webrtc: yes
+webrtcAddress: :8889
+webrtcAdditionalHosts: [satview.ddns.net]
+webrtcLocalUDPAddress: :8189
+webrtcEncryption: yes
+webrtcServerCert: /etc/letsencrypt/live/satview.ddns.net/fullchain.pem
+webrtcServerKey: /etc/letsencrypt/live/satview.ddns.net/privkey.pem
+
+# unused protocols
+rtmp: no
+rtsp: yes
+rtspAddress: 127.0.0.1:8554
+rtspTransports: [tcp]
+
+# --- Recording: OFF by default, toggled from the dashboard button ---
+pathDefaults:
+  runOnReady: /usr/local/bin/srt-out.sh $MTX_PATH $MTX_QUERY
+  runOnReadyRestart: yes
+  record: no
+  recordPath: /var/recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordSegmentDuration: 1h
+  recordDeleteAfter: 72h   # keep 3 days when recording is on
+
+paths:
+  "~^.*_prev$":
+    record: no
+    runOnReady: /usr/local/bin/srt-out.sh $MTX_PATH $MTX_QUERY
+
+  # Accept ANY camera name: publish:cam1, publish:cam2, publish:live, ...
+  all_others:
